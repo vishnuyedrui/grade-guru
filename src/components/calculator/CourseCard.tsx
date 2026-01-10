@@ -338,7 +338,7 @@ export function CourseCard({
               onChange={(e) =>
                 onUpdate({
                   ...course,
-                  credits: parseInt(e.target.value) || 1,
+                  credits: parseInt(e.target.value),
                 })
               }
               className="bg-card"

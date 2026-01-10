@@ -17,7 +17,7 @@ const Index = () => {
     const newCourses = [...courses];
     newCourses[index] = updatedCourse;
     setCourses(newCourses);
-    
+
     // Auto advance step when WGP is calculated
     if (updatedCourse.wgp !== null && currentStep < 2) {
       setCurrentStep(2);
@@ -34,9 +34,9 @@ const Index = () => {
     }
   };
 
-  const completedCourses = courses.filter(c => c.finalGradePoint !== null);
+  const completedCourses = courses.filter((c) => c.finalGradePoint !== null);
   const sgpaResult = calculateSGPA(completedCourses);
-  
+
   const completedSteps = [
     completedCourses.length > 0 ? 1 : 0,
     completedCourses.length > 0 ? 2 : 0,
@@ -79,7 +79,7 @@ const Index = () => {
             <Sparkles className="w-5 h-5 text-primary" />
             <h2 className="text-lg font-semibold">Step 1 & 2: Courses & Grades</h2>
           </div>
-          
+
           <div className="space-y-6">
             {courses.map((course, index) => (
               <CourseCard
@@ -101,26 +101,20 @@ const Index = () => {
 
         {/* Step 3: SGPA */}
         <section className="space-y-4">
-          <SGPASection 
-            courses={courses} 
-            onShowCGPA={handleShowCGPA} 
-          />
+          <SGPASection courses={courses} onShowCGPA={handleShowCGPA} />
         </section>
 
         {/* Step 4: CGPA (Optional) */}
         {showCGPA && sgpaResult && (
           <section className="space-y-4">
-            <CGPASection 
-              currentSGPA={sgpaResult.sgpa} 
-              currentCredits={sgpaResult.totalCredits} 
-            />
+            <CGPASection currentSGPA={sgpaResult.sgpa} currentCredits={sgpaResult.totalCredits} />
           </section>
         )}
       </main>
 
       {/* Footer */}
       <footer className="mt-12 text-center text-sm text-muted-foreground">
-        <p>Built with ❤️ for students</p>
+        <p>Built with ❤️ for students @ TEAMDINO teamdino.in</p>
       </footer>
     </div>
   );

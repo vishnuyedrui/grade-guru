@@ -492,7 +492,9 @@ export function CourseCard({
       i === assessmentIndex ? { ...a, gradePoint: numValue } : a
     );
 
-    const wgp = calculateWGP(newAssessments);
+    const rawWGP = calculateWGP(newAssessments);
+    const wgp = rawWGP !== null ? Math.min(10, Math.ceil(rawWGP)) : null;
+
 
     let finalGradePoint = null;
     let letterGrade = null;

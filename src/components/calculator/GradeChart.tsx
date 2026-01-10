@@ -71,7 +71,8 @@ export function GradeChart() {
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Grade Conversion Chart */}
+        {/* Grade Conversion Chart [7.8  -> ‘A’ grade with a grade point of 8 (Refer to the following table)]
+*/}
         <div className="flex flex-wrap gap-2">
           {GRADE_MAPPINGS.map((grade) => (
             <div

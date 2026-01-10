@@ -157,13 +157,13 @@ interface SGPASectionProps {
 
 export function SGPASection({ courses, onShowCGPA }: SGPASectionProps) {
   const [showResult, setShowResult] = useState(false);
+  const [sgpa, setSgpa] = useState<number | null>(null);
 
   const validCourses = courses.filter(
     (c) => c.finalGradePoint !== null && c.name.trim() !== ""
   );
 
   const canCalculate = validCourses.length > 0;
-  const result = canCalculate ? calculateSGPA(validCourses) : null;
 
   if (!canCalculate) {
     return (
@@ -178,10 +178,30 @@ export function SGPASection({ courses, onShowCGPA }: SGPASectionProps) {
     );
   }
 
+  const handleCalculate = () => {
+    const result = calculateSGPA(validCourses);
+    setSgpa(result.sgpa);   // ✅ STORE SGPA
+    setShowResult(true);    // ✅ SHOW RESULT SECTION
+  };
+
+  const handleDownload = () => {
+    if (sgpa === null) return;
+
+    generateScoreCardPDF({
+      courses: validCourses.map((c) => ({
+        name: c.name,
+        credits: c.credits,
+        gradePoint: c.finalGradePoint!,
+        letterGrade: c.letterGrade!,
+      })),
+      sgpa,
+    });
+  };
+
   return (
     <Card className="border-2 border-accent/30">
       <CardHeader>
-        <CardTitle className="flex items-center gap-3">
+        <CardTitle className="flex items-center gap-2">
           <Calculator className="w-5 h-5 text-accent" />
           Step 3: SGPA Calculation
         </CardTitle>
@@ -191,19 +211,15 @@ export function SGPASection({ courses, onShowCGPA }: SGPASectionProps) {
         {/* CALCULATE BUTTON */}
         {!showResult && (
           <div className="text-center">
-            <Button
-              size="lg"
-              className="bg-accent text-white hover:bg-accent/90"
-              onClick={() => setShowResult(true)}
-            >
+            <Button size="lg" onClick={handleCalculate}>
               <Calculator className="w-4 h-4 mr-2" />
               Calculate SGPA
             </Button>
           </div>
         )}
 
-        {/* RESULT SECTION */}
-        {showResult && result && (
+        {/* RESULT + DOWNLOAD */}
+        {showResult && (
           <>
             {/* TABLE */}
             <div className="border rounded-lg overflow-hidden">
@@ -237,18 +253,18 @@ export function SGPASection({ courses, onShowCGPA }: SGPASectionProps) {
               </table>
             </div>
 
-            {/* SGPA DISPLAY */}
+            {/* SGPA */}
             <div className="text-center border rounded-lg p-6">
               <p className="text-6xl font-bold text-accent">
-                {result.sgpa.toFixed(2)}
+                {sgpa?.toFixed(2)}
               </p>
               <p className="text-muted-foreground">
                 Semester Grade Point Average
               </p>
             </div>
 
-            {/* ACTION BUTTONS (ALWAYS VISIBLE NOW) */}
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
+            {/* ACTION BUTTONS — ALWAYS VISIBLE */}
+            <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
               <Button variant="outline" size="lg" onClick={onShowCGPA}>
                 <TrendingUp className="w-4 h-4 mr-2" />
                 Calculate New CGPA
@@ -257,17 +273,7 @@ export function SGPASection({ courses, onShowCGPA }: SGPASectionProps) {
               <Button
                 size="lg"
                 className="bg-green-600 text-white hover:bg-green-700"
-                onClick={() => {
-                  generateScoreCardPDF({
-                    courses: validCourses.map((c) => ({
-                      name: c.name,
-                      credits: c.credits,
-                      gradePoint: c.finalGradePoint!,
-                      letterGrade: c.letterGrade!,
-                    })),
-                    sgpa: result.sgpa,
-                  });
-                }}
+                onClick={handleDownload}
               >
                 <Download className="w-4 h-4 mr-2" />
                 Download Score Card

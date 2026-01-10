@@ -281,12 +281,30 @@ export function CourseCard({
     >
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mt-1">
               <BookOpen className="w-5 h-5 text-primary" />
             </div>
-            <CardTitle className="text-lg">Course {index + 1}</CardTitle>
+
+            {/* Course title + lab option */}
+            <div className="flex flex-col">
+              <CardTitle className="text-lg">
+                Course {index + 1}
+              </CardTitle>
+
+              <div className="flex items-center gap-2 mt-1">
+                <input
+                  type="checkbox"
+                  checked={course.hasLab || false}
+                  onChange={(e) => handleLabToggle(e.target.checked)}
+                />
+                <Label className="text-xs text-muted-foreground">
+                  This course has Lab
+                </Label>
+              </div>
+            </div>
           </div>
+
           {canRemove && (
             <Button
               variant="ghost"
@@ -323,7 +341,7 @@ export function CourseCard({
               onChange={(e) =>
                 onUpdate({
                   ...course,
-                  credits: parseInt(e.target.value) || 1,
+                  credits: parseInt(e.target.value),
                 })
               }
               className="bg-card"
@@ -379,16 +397,6 @@ export function CourseCard({
               </tbody>
             </table>
           </div>
-        </div>
-
-        {/* Lab Option */}
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={course.hasLab || false}
-            onChange={(e) => handleLabToggle(e.target.checked)}
-          />
-          <Label>This course has Lab</Label>
         </div>
 
         {/* Lab Marks */}

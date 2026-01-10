@@ -158,6 +158,7 @@ interface SGPASectionProps {
 export function SGPASection({ courses, onShowCGPA }: SGPASectionProps) {
   const [showResult, setShowResult] = useState(false);
 
+  // ✅ Allow even ONE course
   const validCourses = courses.filter(
     (c) => c.finalGradePoint !== null && c.name.trim() !== ""
   );
@@ -190,6 +191,7 @@ export function SGPASection({ courses, onShowCGPA }: SGPASectionProps) {
       </CardHeader>
 
       <CardContent className="space-y-6">
+        {/* BEFORE CALCULATION */}
         {!showResult ? (
           <div className="text-center py-4">
             <p className="text-muted-foreground mb-4">
@@ -199,6 +201,7 @@ export function SGPASection({ courses, onShowCGPA }: SGPASectionProps) {
               </span>{" "}
               course(s) ready for SGPA calculation.
             </p>
+
             <Button
               onClick={() => setShowResult(true)}
               size="lg"
@@ -209,8 +212,9 @@ export function SGPASection({ courses, onShowCGPA }: SGPASectionProps) {
             </Button>
           </div>
         ) : (
+          /* AFTER CALCULATION */
           <div className="space-y-6 animate-scale-in">
-            {/* Course Summary Table */}
+            {/* Course Summary */}
             <div className="bg-card rounded-lg border overflow-hidden">
               <table className="w-full">
                 <thead>
@@ -280,7 +284,7 @@ export function SGPASection({ courses, onShowCGPA }: SGPASectionProps) {
               </CardContent>
             </Card>
 
-            {/* SGPA Result */}
+            {/* SGPA RESULT */}
             <div className="flex flex-col items-center gap-4 p-6 bg-card rounded-lg border">
               <div className="text-center">
                 <div className="text-6xl font-bold text-accent">
@@ -290,32 +294,23 @@ export function SGPASection({ courses, onShowCGPA }: SGPASectionProps) {
                   Your SGPA for this semester
                 </div>
               </div>
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <span>
-                  Total Credits:{" "}
-                  <strong className="text-foreground">
-                    {result!.totalCredits}
-                  </strong>
-                </span>
-                <span>•</span>
-                <span>
-                  Total Grade Points:{" "}
-                  <strong className="text-foreground">
-                    {result!.totalGradePoints.toFixed(0)}
-                  </strong>
-                </span>
-              </div>
             </div>
 
-            {/* CGPA + DOWNLOAD BUTTONS */}
-            <div className="flex justify-center gap-4 pt-4">
-              <Button variant="outline" onClick={onShowCGPA} size="lg">
+            {/* ✅ ACTION BUTTONS (ALWAYS VISIBLE, EVEN FOR 1 COURSE) */}
+            <div className="w-full flex flex-row items-center justify-center gap-6 pt-6">
+              <Button
+                variant="outline"
+                onClick={onShowCGPA}
+                size="lg"
+                className="min-w-[260px]"
+              >
                 <TrendingUp className="w-4 h-4 mr-2" />
                 Calculate New CGPA (Optional)
               </Button>
 
               <Button
                 size="lg"
+                className="min-w-[260px]"
                 onClick={() => {
                   const courseData = validCourses.map((c) => ({
                     name: c.name,

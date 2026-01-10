@@ -281,30 +281,12 @@ export function CourseCard({
     >
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mt-1">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
               <BookOpen className="w-5 h-5 text-primary" />
             </div>
-
-            {/* Course title + lab option */}
-            <div className="flex flex-col">
-              <CardTitle className="text-lg">
-                Course {index + 1}
-              </CardTitle>
-
-              <div className="flex items-center gap-2 mt-1">
-                <input
-                  type="checkbox"
-                  checked={course.hasLab || false}
-                  onChange={(e) => handleLabToggle(e.target.checked)}
-                />
-                <Label className="text-xs text-muted-foreground">
-                  This course has Lab
-                </Label>
-              </div>
-            </div>
+            <CardTitle className="text-lg">Course {index + 1}</CardTitle>
           </div>
-
           {canRemove && (
             <Button
               variant="ghost"
@@ -321,6 +303,7 @@ export function CourseCard({
       <CardContent className="space-y-6">
         {/* Course Info */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Course Name */}
           <div className="space-y-2">
             <Label>Course Name</Label>
             <Input
@@ -330,7 +313,21 @@ export function CourseCard({
               }
               className="bg-card"
             />
+
+            {/* ✅ Lab checkbox UNDER course name input */}
+            <div className="flex items-center gap-2 mt-1">
+              <input
+                type="checkbox"
+                checked={course.hasLab || false}
+                onChange={(e) => handleLabToggle(e.target.checked)}
+              />
+              <Label className="text-xs text-muted-foreground">
+                This course has Lab
+              </Label>
+            </div>
           </div>
+
+          {/* Credits */}
           <div className="space-y-2">
             <Label>Credits</Label>
             <Input
@@ -341,7 +338,7 @@ export function CourseCard({
               onChange={(e) =>
                 onUpdate({
                   ...course,
-                  credits: parseInt(e.target.value),
+                  credits: parseInt(e.target.value) || 1,
                 })
               }
               className="bg-card"
@@ -439,4 +436,5 @@ export function CourseCard({
     </Card>
   );
 }
+
 

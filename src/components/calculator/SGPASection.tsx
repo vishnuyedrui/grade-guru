@@ -145,7 +145,7 @@
 import { Course, calculateSGPA } from "@/types/calculator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calculator, TrendingUp, Award, Download } from "lucide-react";
+import { Calculator, TrendingUp, Award } from "lucide-react";
 import { useState } from "react";
 import { GradeBadge } from "./GradeBadge";
 import { generateScoreCardPDF } from "@/utils/scorecardPdf";
@@ -267,13 +267,13 @@ export function SGPASection({ courses, onShowCGPA }: SGPASectionProps) {
                     SGPA = Σ(Credits × Grade Point) ÷ Σ(Total Credits)
                   </div>
                   <div className="text-muted-foreground">
-                    SGPA = {result?.totalGradePoints.toFixed(0)} ÷{" "}
-                    {result?.totalCredits}
+                    SGPA = {result!.totalGradePoints.toFixed(0)} ÷{" "}
+                    {result!.totalCredits}
                   </div>
                   <div className="text-foreground font-semibold text-lg">
                     SGPA ={" "}
                     <span className="text-accent">
-                      {result?.sgpa.toFixed(2)}
+                      {result!.sgpa.toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -284,18 +284,38 @@ export function SGPASection({ courses, onShowCGPA }: SGPASectionProps) {
             <div className="flex flex-col items-center gap-4 p-6 bg-card rounded-lg border">
               <div className="text-center">
                 <div className="text-6xl font-bold text-accent">
-                  {result?.sgpa.toFixed(2)}
+                  {result!.sgpa.toFixed(2)}
                 </div>
                 <div className="text-muted-foreground mt-2">
                   Your SGPA for this semester
                 </div>
               </div>
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <span>
+                  Total Credits:{" "}
+                  <strong className="text-foreground">
+                    {result!.totalCredits}
+                  </strong>
+                </span>
+                <span>•</span>
+                <span>
+                  Total Grade Points:{" "}
+                  <strong className="text-foreground">
+                    {result!.totalGradePoints.toFixed(0)}
+                  </strong>
+                </span>
+              </div>
             </div>
 
-            {/* ✅ DOWNLOAD SCORE CARD BUTTON (NEW) */}
-            {showResult && result && (
+            {/* CGPA + DOWNLOAD BUTTONS */}
+            <div className="flex justify-center gap-4 pt-4">
+              <Button variant="outline" onClick={onShowCGPA} size="lg">
+                <TrendingUp className="w-4 h-4 mr-2" />
+                Calculate New CGPA (Optional)
+              </Button>
+
               <Button
-                className="w-full"
+                size="lg"
                 onClick={() => {
                   const courseData = validCourses.map((c) => ({
                     name: c.name,
@@ -303,42 +323,14 @@ export function SGPASection({ courses, onShowCGPA }: SGPASectionProps) {
                     gradePoint: c.finalGradePoint!,
                     letterGrade: c.letterGrade!,
                   }));
-            
+
                   generateScoreCardPDF({
                     courses: courseData,
-                    sgpa: result.sgpa,
+                    sgpa: result!.sgpa,
                   });
                 }}
               >
                 Download Score Card (PDF)
-              </Button>
-            )}
-
-            {/* <Button
-              className="w-full"
-              onClick={() => {
-                const courseData = validCourses.map((c) => ({
-                  name: c.name,
-                  credits: c.credits,
-                  gradePoint: c.finalGradePoint!,
-                  letterGrade: c.letterGrade!,
-                }));
-
-                generateScoreCardPDF({
-                  courses: courseData,
-                  sgpa: result!.sgpa,
-                });
-              }}
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Download Score Card (PDF)
-            </Button> */}
-
-            {/* CGPA Button */}
-            <div className="text-center pt-4">
-              <Button variant="outline" onClick={onShowCGPA} size="lg">
-                <TrendingUp className="w-4 h-4 mr-2" />
-                Calculate New CGPA (Optional)
               </Button>
             </div>
           </div>

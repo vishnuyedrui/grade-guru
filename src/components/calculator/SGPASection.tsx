@@ -163,11 +163,11 @@ export function SGPASection({ courses, onShowCGPA }: SGPASectionProps) {
   );
 
   const canCalculate = validCourses.length > 0;
-  const result = calculateSGPA(validCourses);
+  const result = canCalculate ? calculateSGPA(validCourses) : null;
 
   if (!canCalculate) {
     return (
-      <Card className="border-dashed border-2 border-muted animate-fade-in">
+      <Card className="border-dashed border-2 border-muted">
         <CardContent className="py-8 text-center">
           <Calculator className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
           <p className="text-muted-foreground">
@@ -179,71 +179,57 @@ export function SGPASection({ courses, onShowCGPA }: SGPASectionProps) {
   }
 
   return (
-    <Card className="animate-fade-in gradient-green border-2 border-accent/30">
+    <Card className="border-2 border-accent/30">
       <CardHeader>
         <CardTitle className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
-            <Calculator className="w-5 h-5 text-accent" />
-          </div>
+          <Calculator className="w-5 h-5 text-accent" />
           Step 3: SGPA Calculation
         </CardTitle>
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {!showResult ? (
-          <div className="text-center py-4">
-            <p className="text-muted-foreground mb-4">
-              You have{" "}
-              <span className="font-semibold text-foreground">
-                {validCourses.length}
-              </span>{" "}
-              course(s) ready for SGPA calculation.
-            </p>
-
+        {/* CALCULATE BUTTON */}
+        {!showResult && (
+          <div className="text-center">
             <Button
-              onClick={() => setShowResult(true)}
               size="lg"
-              className="bg-accent hover:bg-accent/90"
+              className="bg-accent text-white hover:bg-accent/90"
+              onClick={() => setShowResult(true)}
             >
               <Calculator className="w-4 h-4 mr-2" />
               Calculate SGPA
             </Button>
           </div>
-        ) : (
-          <div className="space-y-6 animate-scale-in">
-            {/* COURSE TABLE */}
-            <div className="bg-card rounded-lg border overflow-hidden">
+        )}
+
+        {/* RESULT SECTION */}
+        {showResult && result && (
+          <>
+            {/* TABLE */}
+            <div className="border rounded-lg overflow-hidden">
               <table className="w-full">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="text-left p-3 text-sm font-medium">
-                      Course
-                    </th>
-                    <th className="text-center p-3 text-sm font-medium">
-                      Credits
-                    </th>
-                    <th className="text-center p-3 text-sm font-medium">
-                      Grade
-                    </th>
-                    <th className="text-center p-3 text-sm font-medium">
-                      Credits × GP
-                    </th>
+                <thead className="bg-muted">
+                  <tr>
+                    <th className="p-3 text-left">Course</th>
+                    <th className="p-3 text-center">Credits</th>
+                    <th className="p-3 text-center">Grade</th>
+                    <th className="p-3 text-center">Credits × GP</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {validCourses.map((course) => (
-                    <tr key={course.id} className="border-b last:border-none">
-                      <td className="p-3">{course.name}</td>
-                      <td className="p-3 text-center">{course.credits}</td>
+                  {validCourses.map((c) => (
+                    <tr key={c.id} className="border-t">
+                      <td className="p-3">{c.name}</td>
+                      <td className="p-3 text-center">{c.credits}</td>
                       <td className="p-3 text-center">
                         <GradeBadge
-                          letter={course.letterGrade!}
-                          point={course.finalGradePoint!}
+                          letter={c.letterGrade!}
+                          point={c.finalGradePoint!}
                           size="sm"
                         />
                       </td>
                       <td className="p-3 text-center">
-                        {(course.credits * course.finalGradePoint!).toFixed(0)}
+                        {c.credits * c.finalGradePoint!}
                       </td>
                     </tr>
                   ))}
@@ -251,36 +237,35 @@ export function SGPASection({ courses, onShowCGPA }: SGPASectionProps) {
               </table>
             </div>
 
-            {/* SGPA RESULT */}
-            <div className="flex flex-col items-center gap-3 p-6 bg-card rounded-lg border">
-              <div className="text-6xl font-bold text-accent">
-                {result!.sgpa.toFixed(2)}
-              </div>
-              <div className="text-muted-foreground">
-                Your SGPA for this semester
-              </div>
+            {/* SGPA DISPLAY */}
+            <div className="text-center border rounded-lg p-6">
+              <p className="text-6xl font-bold text-accent">
+                {result.sgpa.toFixed(2)}
+              </p>
+              <p className="text-muted-foreground">
+                Semester Grade Point Average
+              </p>
             </div>
 
-            {/* ACTION BUTTONS */}
-            <div className="w-full flex flex-col sm:flex-row justify-center gap-4 pt-6">
-              <Button variant="outline" onClick={onShowCGPA} size="lg">
+            {/* ACTION BUTTONS (ALWAYS VISIBLE NOW) */}
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <Button variant="outline" size="lg" onClick={onShowCGPA}>
                 <TrendingUp className="w-4 h-4 mr-2" />
                 Calculate New CGPA
               </Button>
 
               <Button
                 size="lg"
+                className="bg-green-600 text-white hover:bg-green-700"
                 onClick={() => {
-                  const courseData = validCourses.map((c) => ({
-                    name: c.name,
-                    credits: c.credits,
-                    gradePoint: c.finalGradePoint!,
-                    letterGrade: c.letterGrade!,
-                  }));
-
                   generateScoreCardPDF({
-                    courses: courseData,
-                    sgpa: result!.sgpa,
+                    courses: validCourses.map((c) => ({
+                      name: c.name,
+                      credits: c.credits,
+                      gradePoint: c.finalGradePoint!,
+                      letterGrade: c.letterGrade!,
+                    })),
+                    sgpa: result.sgpa,
                   });
                 }}
               >
@@ -288,7 +273,7 @@ export function SGPASection({ courses, onShowCGPA }: SGPASectionProps) {
                 Download Score Card
               </Button>
             </div>
-          </div>
+          </>
         )}
       </CardContent>
     </Card>

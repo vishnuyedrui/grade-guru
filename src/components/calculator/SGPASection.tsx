@@ -145,7 +145,7 @@
 import { Course, calculateSGPA } from "@/types/calculator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calculator, TrendingUp, Award } from "lucide-react";
+import { Calculator, TrendingUp, Download } from "lucide-react";
 import { useState } from "react";
 import { GradeBadge } from "./GradeBadge";
 import { generateScoreCardPDF } from "@/utils/scorecardPdf";
@@ -211,7 +211,7 @@ export function SGPASection({ courses, onShowCGPA }: SGPASectionProps) {
           </div>
         ) : (
           <div className="space-y-6 animate-scale-in">
-            {/* Course Table */}
+            {/* COURSE TABLE */}
             <div className="bg-card rounded-lg border overflow-hidden">
               <table className="w-full">
                 <thead>
@@ -232,7 +232,7 @@ export function SGPASection({ courses, onShowCGPA }: SGPASectionProps) {
                 </thead>
                 <tbody>
                   {validCourses.map((course) => (
-                    <tr key={course.id}>
+                    <tr key={course.id} className="border-b last:border-none">
                       <td className="p-3">{course.name}</td>
                       <td className="p-3 text-center">{course.credits}</td>
                       <td className="p-3 text-center">
@@ -252,7 +252,7 @@ export function SGPASection({ courses, onShowCGPA }: SGPASectionProps) {
             </div>
 
             {/* SGPA RESULT */}
-            <div className="flex flex-col items-center gap-4 p-6 bg-card rounded-lg border">
+            <div className="flex flex-col items-center gap-3 p-6 bg-card rounded-lg border">
               <div className="text-6xl font-bold text-accent">
                 {result!.sgpa.toFixed(2)}
               </div>
@@ -262,7 +262,7 @@ export function SGPASection({ courses, onShowCGPA }: SGPASectionProps) {
             </div>
 
             {/* ACTION BUTTONS */}
-            <div className="w-full flex justify-center gap-6 pt-6">
+            <div className="w-full flex flex-col sm:flex-row justify-center gap-4 pt-6">
               <Button variant="outline" onClick={onShowCGPA} size="lg">
                 <TrendingUp className="w-4 h-4 mr-2" />
                 Calculate New CGPA
@@ -284,6 +284,7 @@ export function SGPASection({ courses, onShowCGPA }: SGPASectionProps) {
                   });
                 }}
               >
+                <Download className="w-4 h-4 mr-2" />
                 Download Score Card
               </Button>
             </div>
@@ -293,4 +294,3 @@ export function SGPASection({ courses, onShowCGPA }: SGPASectionProps) {
     </Card>
   );
 }
-

@@ -293,7 +293,28 @@ export function SGPASection({ courses, onShowCGPA }: SGPASectionProps) {
             </div>
 
             {/* ✅ DOWNLOAD SCORE CARD BUTTON (NEW) */}
-            <Button
+            {showResult && result && (
+              <Button
+                className="w-full"
+                onClick={() => {
+                  const courseData = validCourses.map((c) => ({
+                    name: c.name,
+                    credits: c.credits,
+                    gradePoint: c.finalGradePoint!,
+                    letterGrade: c.letterGrade!,
+                  }));
+            
+                  generateScoreCardPDF({
+                    courses: courseData,
+                    sgpa: result.sgpa,
+                  });
+                }}
+              >
+                Download Score Card (PDF)
+              </Button>
+            )}
+
+            {/* <Button
               className="w-full"
               onClick={() => {
                 const courseData = validCourses.map((c) => ({
@@ -311,7 +332,7 @@ export function SGPASection({ courses, onShowCGPA }: SGPASectionProps) {
             >
               <Download className="w-4 h-4 mr-2" />
               Download Score Card (PDF)
-            </Button>
+            </Button> */}
 
             {/* CGPA Button */}
             <div className="text-center pt-4">

@@ -414,7 +414,15 @@ export function CourseCard({
         {/* Results */}
         {course.wgp !== null && (
           <div className="animate-scale-in space-y-4">
-            <WGPFormula assessments={course.assessments} wgp={course.wgp} />
+            {/* <WGPFormula assessments={course.assessments} wgp={course.wgp} /> */}
+            <WGPFormula
+              assessments={course.assessments}
+              wgp={course.wgp}
+              hasLab={course.hasLab}
+              labMarks={course.labMarks}
+              finalGradePoint={course.finalGradePoint}
+            />
+
 
             {course.finalGradePoint !== null && course.letterGrade && (
               <div className="flex items-center justify-center gap-4 p-4 bg-card rounded-lg border">

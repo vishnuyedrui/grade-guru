@@ -652,36 +652,42 @@ export function CourseCard({
         </div>
 
         {/* CLAD: Direct Grade Point Input */}
+       {/* CLAD: Grade Selection */}
         {isCLAD && (
           <div className="space-y-2">
-            <Label>Final Grade Point (0–10)</Label>
-            <Input
-              type="number"
-              min={0}
-              max={10}
-              step={0.1}
-              value={course.finalGradePoint ?? ""}
+            <Label>Final Grade</Label>
+            <select
+              className="w-full rounded-md border bg-card px-2 py-2 text-center"
+              value={course.letterGrade ?? ""}
               onChange={(e) => {
-                const gp =
-                  e.target.value === ""
-                    ? null
-                    : Math.min(10, Math.max(0, parseFloat(e.target.value)));
-
-                if (gp !== null) {
-                  const grade = getGradeFromWGP(gp);
-                  onUpdate({
-                    ...course,
-                    credits: 1,
-                    wgp: gp,
-                    finalGradePoint: gp,
-                    letterGrade: grade.letter,
-                  });
-                }
+                const selected = GRADE_OPTIONS.find(
+                  g => g.label === e.target.value
+                );
+        
+                if (!selected) return;
+        
+                onUpdate({
+                  ...course,
+                  credits: 1,              // ✅ fixed
+                  wgp: selected.value,     // ✅ GP
+                  finalGradePoint: selected.value,
+                  letterGrade: selected.label,
+                  assessments: [],         // ✅ no theory
+                  hasLab: false,
+                  labMarks: null,
+                });
               }}
-              className="bg-card"
-            />
+            >
+              <option value="">Select Grade</option>
+              {GRADE_OPTIONS.map((g) => (
+                <option key={g.label} value={g.label}>
+                  {g.label}
+                </option>
+              ))}
+            </select>
           </div>
         )}
+
 
         {/* Assessments (hidden for CLAD) */}
         {!isCLAD && (
@@ -761,45 +767,44 @@ export function CourseCard({
         )}
 
         {/* Lab Marks */}
+        {/* Lab Marks */}
         {!isCLAD && course.hasLab && (
           <div className="space-y-2">
             <Label>Lab Marks (out of 100)</Label>
-            <select
-              className="w-full rounded-md border bg-card px-2 py-1"
-              value={
-                course.finalGradePoint !== null
-                  ? GRADE_OPTIONS.find(g => g.value === course.finalGradePoint)?.label
-                  : ""
-              }
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              placeholder="Enter lab marks"
+              value={course.labMarks ?? ""}
               onChange={(e) => {
-                const selected = GRADE_OPTIONS.find(
-                  g => g.label === e.target.value
-                );
-            
-                if (selected) {
-                  const gp = selected.value;
-                  const grade = getGradeFromWGP(gp);
-            
+                const labMarks =
+                  e.target.value === ""
+                    ? null
+                    : Math.min(100, Math.max(0, Number(e.target.value)));
+        
+                if (course.wgp !== null && labMarks !== null) {
+                  const finalGP = calculateFinalGradePointWithLab(
+                    course.wgp,
+                    labMarks
+                  );
+                  const grade = getGradeFromWGP(finalGP);
+        
                   onUpdate({
                     ...course,
-                    credits: 1,
-                    wgp: gp,
-                    finalGradePoint: gp,
+                    labMarks,
+                    finalGradePoint: finalGP,
                     letterGrade: grade.letter,
                   });
+                } else {
+                  onUpdate({ ...course, labMarks });
                 }
               }}
-            >
-              <option value="">Select Grade</option>
-              {GRADE_OPTIONS.map((g) => (
-                <option key={g.label} value={g.label}>
-                  {g.label}
-                </option>
-              ))}
-            </select>
-
+              className="bg-card"
+            />
           </div>
         )}
+
 
         {/* Results */}
         {(course.wgp !== null || course.finalGradePoint !== null) && (

@@ -82,7 +82,10 @@ export const SubjectSetup = ({ subjects, onSubjectsChange }: SubjectSetupProps) 
                   min={0}
                   placeholder="0"
                   value={subject.totalClasses || ''}
-                  onChange={(e) => updateSubject(index, 'totalClasses', parseInt(e.target.value) || 0)}
+                  onChange={(e) => {
+                    const value = e.target.value === "" ? 0 : Number(e.target.value);
+                    updateSubject(index, "totalClasses", Math.max(0, value));
+                  }}
                   className="mt-1 h-9 text-sm"
                 />
               </div>
@@ -94,7 +97,14 @@ export const SubjectSetup = ({ subjects, onSubjectsChange }: SubjectSetupProps) 
                   max={subject.totalClasses}
                   placeholder="0"
                   value={subject.attendedClasses || ''}
-                  onChange={(e) => updateSubject(index, 'attendedClasses', Math.min(parseInt(e.target.value) || 0, subject.totalClasses))}
+                  onChange={(e) => {
+                    const value = e.target.value === "" ? 0 : Number(e.target.value);
+                    updateSubject(
+                      index,
+                      "attendedClasses",
+                      Math.min(Math.max(0, value), subject.totalClasses)
+                    );
+                  }}
                   className="mt-1 h-9 text-sm"
                 />
               </div>

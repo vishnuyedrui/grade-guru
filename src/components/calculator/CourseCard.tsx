@@ -820,7 +820,12 @@ export function CourseCard({
                 <tbody>
                   {course.assessments.map((assessment, i) => {
                     const gradeOptions = getGradeOptions(assessment.name);
-                    const isIGrade = assessment.gradeLabel === 'I';
+                    // const isIGrade = assessment.gradeLabel === 'I';
+                    const needsMarks =
+                      assessment.gradeLabel === 'I' ||
+                      assessment.gradeLabel === 'P' ||
+                      assessment.gradeLabel === 'Ab/R';
+
                     const isSessional = assessment.name === 'Sessional 1' || assessment.name === 'Sessional 2';
                     
                     return (
@@ -848,7 +853,7 @@ export function CourseCard({
                             </select>
                             
                             {/* Show marks input for "I" grade on sessionals */}
-                            {isIGrade && isSessional && (
+                            {needsMarks && isSessional && (
                               <Input
                                 type="number"
                                 min={0}

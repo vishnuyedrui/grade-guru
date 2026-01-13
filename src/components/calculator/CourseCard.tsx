@@ -531,67 +531,146 @@ export function CourseCard({
     return SESSIONAL_GRADE_OPTIONS;
   };
 
+    const checkSessionalPassByMarks = (assessments: Assessment[]) => {
+      const s1 = assessments.find(a => a.name === "Sessional 1");
+      const s2 = assessments.find(a => a.name === "Sessional 2");
+    
+      if (!s1 || !s2) return null;
+      if (s1.marks == null || s2.marks == null) return null;
+    
+      return s1.marks >= 25 && s2.marks >= 25;
+    };
+
   // Helper to recalculate and update course based on assessments
-  const recalculateCourse = (newAssessments: Assessment[]) => {
-    // Check for special grade conditions
-    const fGradeCheck = checkForFGrade(newAssessments);
-    const iGradeCheck = checkForIGrade(newAssessments);
+  // const recalculateCourse = (newAssessments: Assessment[]) => {
+  //   // Check for special grade conditions
+  //   const fGradeCheck = checkForFGrade(newAssessments);
+  //   const iGradeCheck = checkForIGrade(newAssessments);
     
-    // If F grade condition is met, set F grade
-    if (fGradeCheck.isF) {
-      onUpdate({
-        ...course,
-        assessments: newAssessments,
-        wgp: 0,
-        finalGradePoint: 0,
-        letterGrade: 'F',
-      });
-      return;
-    }
+  //   // If F grade condition is met, set F grade
+  //   if (fGradeCheck.isF) {
+  //     onUpdate({
+  //       ...course,
+  //       assessments: newAssessments,
+  //       wgp: 0,
+  //       finalGradePoint: 0,
+  //       letterGrade: 'F',
+  //     });
+  //     return;
+  //   }
     
-    // If I grade condition is met (both sessionals have I with marks >= 25)
-    if (iGradeCheck) {
-      const effectiveGP = course.hasLab && course.labMarks !== null
-        ? calculateFinalGradePointWithLab(4, course.labMarks)
-        : 4;
+  //   // If I grade condition is met (both sessionals have I with marks >= 25)
+  //   if (iGradeCheck) {
+  //     const effectiveGP = course.hasLab && course.labMarks !== null
+  //       ? calculateFinalGradePointWithLab(4, course.labMarks)
+  //       : 4;
       
-      onUpdate({
-        ...course,
-        assessments: newAssessments,
-        wgp: 4,
-        finalGradePoint: effectiveGP,
-        letterGrade: 'I',
-      });
-      return;
-    }
+  //     onUpdate({
+  //       ...course,
+  //       assessments: newAssessments,
+  //       wgp: 4,
+  //       finalGradePoint: effectiveGP,
+  //       letterGrade: 'I',
+  //     });
+  //     return;
+  //   }
     
-    // Normal calculation
-    const rawWGP = calculateWGP(newAssessments);
-    const wgp = rawWGP !== null ? Math.min(10, Math.ceil(rawWGP)) : null;
+  //   // Normal calculation
+  //   const rawWGP = calculateWGP(newAssessments);
+  //   const wgp = rawWGP !== null ? Math.min(10, Math.ceil(rawWGP)) : null;
 
-    let finalGradePoint = null;
-    let letterGrade = null;
+  //   let finalGradePoint = null;
+  //   let letterGrade = null;
 
-    if (wgp !== null) {
+  //   if (wgp !== null) {
+  //     let effectiveGP = wgp;
+
+  //     if (course.hasLab && course.labMarks !== null) {
+  //       effectiveGP = calculateFinalGradePointWithLab(wgp, course.labMarks);
+  //     }
+
+  //     const grade = getGradeFromWGP(effectiveGP);
+  //     finalGradePoint = effectiveGP;
+  //     letterGrade = grade.letter;
+  //   }
+
+  //   onUpdate({
+  //     ...course,
+  //     assessments: newAssessments,
+  //     wgp,
+  //     finalGradePoint,
+  //     letterGrade,
+  //   });
+  // };
+   const recalculateCourse = (newAssessments: Assessment[]) => {
+      const sessionalPass = checkSessionalPassByMarks(newAssessments);
+    
+      const hasSpecialGrade = newAssessments.some(a =>
+        a.gradeLabel === "I" ||
+        a.gradeLabel === "P" ||
+        a.gradeLabel === "Ab/R"
+      );
+    
+      // ❌ FAIL case (marks < 25)
+      if (sessionalPass === false) {
+        onUpdate({
+          ...course,
+          assessments: newAssessments.map(a =>
+            a.name === "Sessional 1" || a.name === "Sessional 2"
+              ? { ...a, gradePoint: 0 }
+              : a
+          ),
+          wgp: 0,
+          finalGradePoint: 0,
+          letterGrade: "F",
+        });
+        return;
+      }
+    
+      // ✅ PASS case for I / P / Ab/R (any combination)
+      if (hasSpecialGrade && sessionalPass === true) {
+        const baseGP = 4;
+    
+        const effectiveGP =
+          course.hasLab && course.labMarks !== null
+            ? calculateFinalGradePointWithLab(baseGP, course.labMarks)
+            : baseGP;
+    
+        onUpdate({
+          ...course,
+          assessments: newAssessments.map(a =>
+            a.name === "Sessional 1" || a.name === "Sessional 2"
+              ? { ...a, gradePoint: 4 }
+              : a
+          ),
+          wgp: 4,
+          finalGradePoint: effectiveGP,
+          letterGrade: "P", // unified pass
+        });
+        return;
+      }
+    
+      // 🔹 NORMAL FLOW (O, A, B, C etc.)
+      const rawWGP = calculateWGP(newAssessments);
+      const wgp = rawWGP !== null ? Math.min(10, Math.ceil(rawWGP)) : null;
+    
+      if (wgp === null) return;
+    
       let effectiveGP = wgp;
-
       if (course.hasLab && course.labMarks !== null) {
         effectiveGP = calculateFinalGradePointWithLab(wgp, course.labMarks);
       }
-
+    
       const grade = getGradeFromWGP(effectiveGP);
-      finalGradePoint = effectiveGP;
-      letterGrade = grade.letter;
-    }
-
-    onUpdate({
-      ...course,
-      assessments: newAssessments,
-      wgp,
-      finalGradePoint,
-      letterGrade,
-    });
-  };
+    
+      onUpdate({
+        ...course,
+        assessments: newAssessments,
+        wgp,
+        finalGradePoint: effectiveGP,
+        letterGrade: grade.letter,
+      });
+    };
 
   // const updateAssessmentGrade = (assessmentIndex: number, gradeLabel: string) => {
   //   const gradeOptions = getGradeOptions(course.assessments[assessmentIndex].name);

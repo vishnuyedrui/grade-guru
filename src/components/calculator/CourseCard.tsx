@@ -593,31 +593,64 @@ export function CourseCard({
     });
   };
 
-  const updateAssessmentGrade = (assessmentIndex: number, gradeLabel: string) => {
-    const gradeOptions = getGradeOptions(course.assessments[assessmentIndex].name);
-    const selected = gradeOptions.find(g => g.label === gradeLabel);
+  // const updateAssessmentGrade = (assessmentIndex: number, gradeLabel: string) => {
+  //   const gradeOptions = getGradeOptions(course.assessments[assessmentIndex].name);
+  //   const selected = gradeOptions.find(g => g.label === gradeLabel);
     
-    if (!selected) {
-      // Clear the assessment
-      const newAssessments = course.assessments.map((a, i) =>
-        i === assessmentIndex ? { ...a, gradePoint: null, gradeLabel: null, marks: null } : a
-      );
-      recalculateCourse(newAssessments);
-      return;
-    }
+  //   if (!selected) {
+  //     // Clear the assessment
+  //     const newAssessments = course.assessments.map((a, i) =>
+  //       i === assessmentIndex ? { ...a, gradePoint: null, gradeLabel: null, marks: null } : a
+  //     );
+  //     recalculateCourse(newAssessments);
+  //     return;
+  //   }
     
-    // If "I" grade is selected for sessionals, set gradePoint to null until marks are entered
-    if (gradeLabel === 'I') {
-      const newAssessments = course.assessments.map((a, i) =>
-        i === assessmentIndex ? { ...a, gradePoint: null, gradeLabel: 'I', marks: null } : a
-      );
+  //   // If "I" grade is selected for sessionals, set gradePoint to null until marks are entered
+  //   if (gradeLabel === 'I') {
+  //     const newAssessments = course.assessments.map((a, i) =>
+  //       i === assessmentIndex ? { ...a, gradePoint: null, gradeLabel: 'I', marks: null } : a
+  //     );
+  //     recalculateCourse(newAssessments);
+  //     return;
+  //   }
+    const updateAssessmentMarks = (assessmentIndex: number, marksValue: string) => {
+      const marks =
+        marksValue === ""
+          ? null
+          : Math.min(100, Math.max(0, Number(marksValue)));
+    
+      const newAssessments = course.assessments.map((a, i) => {
+        if (i !== assessmentIndex) return a;
+    
+        let gradePoint = a.gradePoint;
+    
+        // ✅ Keep GP fixed for P and Ab/R
+        if (a.gradeLabel === "P") gradePoint = 4;
+        if (a.gradeLabel === "Ab/R") gradePoint = 0;
+    
+        // ✅ I grade GP handled later by checkForIGrade
+        if (a.gradeLabel === "I") gradePoint = null;
+    
+        return {
+          ...a,
+          marks,
+          gradePoint,
+        };
+      });
+    
       recalculateCourse(newAssessments);
-      return;
-    }
+    };
+
     
     // For other grades, set the grade point directly
     const newAssessments = course.assessments.map((a, i) =>
-      i === assessmentIndex ? { ...a, gradePoint: selected.value, gradeLabel: gradeLabel, marks: null } : a
+      i === assessmentIndex ? {
+      ...a,
+      gradePoint: selected.value >= 0 ? selected.value : null,
+      gradeLabel,
+      marks: a.marks ?? null, // ✅ DO NOT RESET MARKS
+    } : a
     );
     recalculateCourse(newAssessments);
   };

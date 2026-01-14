@@ -66,15 +66,44 @@ export function requiresMarksInput(gradeLabel: string | null): boolean {
 }
 
 // Check if either sessional has a grade that requires marks
-export function sessionalsNeedMarks(assessments: Assessment[]): boolean {
-  const sessional1 = assessments.find(a => a.name === 'Sessional 1');
-  const sessional2 = assessments.find(a => a.name === 'Sessional 2');
-  
-  return (
-    requiresMarksInput(sessional1?.gradeLabel ?? null) ||
-    requiresMarksInput(sessional2?.gradeLabel ?? null)
+export function sessionalsNeedMarks(assessments: Assessment[])
+{
+  const sessionals = assessments.filter(
+    a => a.name === "Sessional 1" || a.name === "Sessional 2"
+  );
+
+  if (sessionals.length !== 2) return false;
+
+  const grades = sessionals.map(s => s.gradeLabel);
+
+  const MARKS_REQUIRED_COMBOS = [
+    ["P", "P"],
+    ["I", "I"],
+    ["Ab/R", "Ab/R"],
+    ["P", "I"],
+    ["I", "P"],
+    ["P", "Ab/R"],
+    ["Ab/R", "P"],
+    ["I", "Ab/R"],
+    ["Ab/R", "I"],
+  ];
+
+  return MARKS_REQUIRED_COMBOS.some(
+    ([a, b]) =>
+      (grades[0] === a && grades[1] === b) ||
+      (grades[0] === b && grades[1] === a)
   );
 }
+
+// export function sessionalsNeedMarks(assessments: Assessment[]): boolean {
+//   const sessional1 = assessments.find(a => a.name === 'Sessional 1');
+//   const sessional2 = assessments.find(a => a.name === 'Sessional 2');
+  
+//   return (
+//     requiresMarksInput(sessional1?.gradeLabel ?? null) ||
+//     requiresMarksInput(sessional2?.gradeLabel ?? null)
+//   );
+// }
 
 // Check if both sessionals have marks entered (when marks are required)
 export function bothSessionalsHaveMarks(assessments: Assessment[]): boolean {
@@ -258,3 +287,15 @@ export function calculateFinalGradePointWithLab(
   const finalPercentage = theoryContribution + labContribution;
   return parseFloat((finalPercentage / 10).toFixed(2));
 }
+// 🔴 HARD RULE: Any Ab/R → GP = 0
+const hasAbR = sessionals.some(s => s.gradeLabel === "Ab/R");
+
+if (hasAbR && totalMarks !== null) {
+  return {
+    letterGrade: totalMarks >= 25 ? "Ab/R" : "F",
+    gradePoint: 0,
+    isSpecialCase: true,
+    reason: "Ab/R present",
+  };
+}
+

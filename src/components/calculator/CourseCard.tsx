@@ -455,8 +455,11 @@ import {
   calculateWGP,
   getGradeFromWGP,
   calculateFinalGradePointWithLab,
-  checkForIGrade,
   checkForFGrade,
+  requiresMarksInput,
+  getSessionalTotalMarks,
+  getSessionalGradePoint,
+  SPECIAL_SESSIONAL_GRADES,
 } from "@/types/calculator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -475,9 +478,9 @@ const SESSIONAL_GRADE_OPTIONS = [
   { label: "B+", value: 7 },
   { label: "B", value: 6 },
   { label: "C", value: 5 },
-  { label: "P", value: 4 },
-  { label: "I", value: -1 }, // Special: requires marks input
-  { label: "Ab/R", value: 0 },
+  { label: "P", value: -1 },   // Special: requires marks input, GP based on total
+  { label: "I", value: -1 },   // Special: requires marks input, GP based on total
+  { label: "Ab/R", value: -1 }, // Special: requires marks input, always GP 0
 ];
 
 // Grade options for Learning Engagement
@@ -533,11 +536,77 @@ export function CourseCard({
 
   // Helper to recalculate and update course based on assessments
   const recalculateCourse = (newAssessments: Assessment[]) => {
-    // Check for special grade conditions
-    const fGradeCheck = checkForFGrade(newAssessments);
-    const iGradeCheck = checkForIGrade(newAssessments);
+    // Check if marks input is required
+    const needsMarks = requiresMarksInput(newAssessments);
     
-    // If F grade condition is met, set F grade
+    if (needsMarks) {
+      const { total, bothEntered, s1Marks, s2Marks } = getSessionalTotalMarks(newAssessments);
+      
+      // If both marks aren't entered yet, wait for input
+      if (!bothEntered) {
+        onUpdate({
+          ...course,
+          assessments: newAssessments,
+          wgp: null,
+          finalGradePoint: null,
+          letterGrade: null,
+        });
+        return;
+      }
+      
+      // Check for F grade condition first
+      const fGradeCheck = checkForFGrade(newAssessments);
+      if (fGradeCheck.isF) {
+        onUpdate({
+          ...course,
+          assessments: newAssessments,
+          wgp: 0,
+          finalGradePoint: 0,
+          letterGrade: 'F',
+        });
+        return;
+      }
+      
+      // Calculate grade points for each sessional based on total marks
+      const updatedAssessments = newAssessments.map(a => {
+        if ((a.name === 'Sessional 1' || a.name === 'Sessional 2') && SPECIAL_SESSIONAL_GRADES.includes(a.gradeLabel || '')) {
+          const gradePoint = getSessionalGradePoint(a.gradeLabel, total);
+          return { ...a, gradePoint };
+        }
+        return a;
+      });
+      
+      // Normal WGP calculation with updated grade points
+      const rawWGP = calculateWGP(updatedAssessments);
+      const wgp = rawWGP !== null ? Math.min(10, Math.ceil(rawWGP)) : null;
+
+      let finalGradePoint = null;
+      let letterGrade = null;
+
+      if (wgp !== null) {
+        let effectiveGP = wgp;
+
+        if (course.hasLab && course.labMarks !== null) {
+          effectiveGP = calculateFinalGradePointWithLab(wgp, course.labMarks);
+        }
+
+        const grade = getGradeFromWGP(effectiveGP);
+        finalGradePoint = effectiveGP;
+        letterGrade = grade.letter;
+      }
+
+      onUpdate({
+        ...course,
+        assessments: updatedAssessments,
+        wgp,
+        finalGradePoint,
+        letterGrade,
+      });
+      return;
+    }
+    
+    // No special grades - check F condition for L/AB
+    const fGradeCheck = checkForFGrade(newAssessments);
     if (fGradeCheck.isF) {
       onUpdate({
         ...course,
@@ -545,22 +614,6 @@ export function CourseCard({
         wgp: 0,
         finalGradePoint: 0,
         letterGrade: 'F',
-      });
-      return;
-    }
-    
-    // If I grade condition is met (both sessionals have I with marks >= 25)
-    if (iGradeCheck) {
-      const effectiveGP = course.hasLab && course.labMarks !== null
-        ? calculateFinalGradePointWithLab(4, course.labMarks)
-        : 4;
-      
-      onUpdate({
-        ...course,
-        assessments: newAssessments,
-        wgp: 4,
-        finalGradePoint: effectiveGP,
-        letterGrade: 'I',
       });
       return;
     }
@@ -606,10 +659,10 @@ export function CourseCard({
       return;
     }
     
-    // If "I" grade is selected for sessionals, set gradePoint to null until marks are entered
-    if (gradeLabel === 'I') {
+    // If special grade (I, P, Ab/R) is selected for sessionals, set gradePoint to null until marks are entered
+    if (SPECIAL_SESSIONAL_GRADES.includes(gradeLabel)) {
       const newAssessments = course.assessments.map((a, i) =>
-        i === assessmentIndex ? { ...a, gradePoint: null, gradeLabel: 'I', marks: null } : a
+        i === assessmentIndex ? { ...a, gradePoint: null, gradeLabel: gradeLabel, marks: null } : a
       );
       recalculateCourse(newAssessments);
       return;
@@ -627,14 +680,15 @@ export function CourseCard({
     
     const newAssessments = course.assessments.map((a, i) => {
       if (i !== assessmentIndex) return a;
-      
-      // For "I" grade, we store marks but gradePoint calculation depends on the marks
-      // The grade point for "I" is 4 if both sessionals have marks >= 25, otherwise we need to check later
       return { ...a, marks };
     });
     
     recalculateCourse(newAssessments);
   };
+  
+  // Check if marks input is required for this course
+  const showMarksInputs = requiresMarksInput(course.assessments);
+  const { total: totalMarks, s1Marks, s2Marks, bothEntered } = getSessionalTotalMarks(course.assessments);
 
   const handleLabToggle = (checked: boolean) => {
     onUpdate({
@@ -820,8 +874,11 @@ export function CourseCard({
                 <tbody>
                   {course.assessments.map((assessment, i) => {
                     const gradeOptions = getGradeOptions(assessment.name);
-                    const isIGrade = assessment.gradeLabel === 'I';
                     const isSessional = assessment.name === 'Sessional 1' || assessment.name === 'Sessional 2';
+                    const hasSpecialGrade = SPECIAL_SESSIONAL_GRADES.includes(assessment.gradeLabel || '');
+                    
+                    // Show marks input if this is a sessional AND any sessional has a special grade
+                    const showMarksInput = isSessional && showMarksInputs;
                     
                     return (
                       <tr key={assessment.name} className="border-b">
@@ -847,17 +904,27 @@ export function CourseCard({
                               ))}
                             </select>
                             
-                            {/* Show marks input for "I" grade on sessionals */}
-                            {isIGrade && isSessional && (
-                              <Input
-                                type="number"
-                                min={0}
-                                max={100}
-                                placeholder="Enter marks (0-100)"
-                                value={assessment.marks ?? ""}
-                                onChange={(e) => updateAssessmentMarks(i, e.target.value)}
-                                className="w-full text-center bg-background text-sm"
-                              />
+                            {/* Show marks input for sessionals when ANY special grade (I, P, Ab/R) is selected */}
+                            {showMarksInput && (
+                              <div className="space-y-1">
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  max={100}
+                                  placeholder="Enter marks (0-100) *"
+                                  value={assessment.marks ?? ""}
+                                  onChange={(e) => updateAssessmentMarks(i, e.target.value)}
+                                  className={cn(
+                                    "w-full text-center bg-background text-sm",
+                                    assessment.marks === null && "border-amber-500"
+                                  )}
+                                />
+                                {hasSpecialGrade && (
+                                  <p className="text-xs text-muted-foreground text-center">
+                                    {assessment.gradeLabel}: GP will be calculated based on total
+                                  </p>
+                                )}
+                              </div>
                             )}
                           </div>
                         </td>
@@ -868,24 +935,38 @@ export function CourseCard({
               </table>
             </div>
             
-            {/* Show warning messages for special conditions */}
-            {course.letterGrade === 'F' && (
-              <div className="text-sm text-destructive bg-destructive/10 p-2 rounded">
-                {checkForFGrade(course.assessments).reason === 'Total marks < 25' && (
-                  <span>⚠️ Total marks are less than 25 - Grade: F</span>
+            {/* Show total marks calculation when marks are being entered */}
+            {showMarksInputs && (
+              <div className={cn(
+                "text-sm p-3 rounded border",
+                !bothEntered ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300" :
+                totalMarks >= 25 ? "bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-300" :
+                "bg-destructive/10 border-destructive/30 text-destructive"
+              )}>
+                <div className="font-medium mb-1">Sessional Marks Summary:</div>
+                <div className="flex flex-wrap gap-4 text-xs">
+                  <span>S1: {s1Marks !== null ? s1Marks : '—'}</span>
+                  <span>S2: {s2Marks !== null ? s2Marks : '—'}</span>
+                  <span className="font-semibold">Total: {bothEntered ? totalMarks : '—'}</span>
+                </div>
+                {!bothEntered && (
+                  <p className="text-xs mt-1">⚠️ Enter marks for both sessionals to calculate grades</p>
                 )}
-                {checkForFGrade(course.assessments).reason === 'Learning Engagement is L/AB' && (
-                  <span>⚠️ Learning Engagement is L/AB - Grade: F</span>
+                {bothEntered && totalMarks >= 25 && (
+                  <p className="text-xs mt-1">✅ Total ≥ 25: I/P grades get GP 4, Ab/R gets GP 0</p>
                 )}
-                {checkForFGrade(course.assessments).reason === 'Ab/R grade present' && (
-                  <span>⚠️ Ab/R grade present - Grade: F</span>
+                {bothEntered && totalMarks < 25 && (
+                  <p className="text-xs mt-1">⚠️ Total &lt; 25: All special grades get GP 0 → Final Grade: F</p>
                 )}
               </div>
             )}
             
-            {course.letterGrade === 'I' && (
-              <div className="text-sm text-primary bg-primary/10 p-2 rounded">
-                ✅ Both sessional marks ≥ 25 - Grade: I (Grade Point: 4)
+            {/* Show warning messages for special conditions */}
+            {course.letterGrade === 'F' && !showMarksInputs && (
+              <div className="text-sm text-destructive bg-destructive/10 p-2 rounded">
+                {checkForFGrade(course.assessments).reason === 'Learning Engagement is L/AB' && (
+                  <span>⚠️ Learning Engagement is L/AB - Grade: F</span>
+                )}
               </div>
             )}
           </div>

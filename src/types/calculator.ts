@@ -57,18 +57,46 @@ export function createNewCourse(): Course {
   };
 }
 
-// Check if the course should get "I" grade (both sessionals have marks >= 25)
-export function checkForIGrade(assessments: Assessment[]): boolean {
+// Special grades that require marks input
+export const SPECIAL_SESSIONAL_GRADES = ['I', 'P', 'Ab/R'];
+
+// Check if marks input is required (when I, P, or Ab/R is selected in either sessional)
+export function requiresMarksInput(assessments: Assessment[]): boolean {
   const sessional1 = assessments.find(a => a.name === 'Sessional 1');
   const sessional2 = assessments.find(a => a.name === 'Sessional 2');
   
-  if (!sessional1 || !sessional2) return false;
+  return (
+    SPECIAL_SESSIONAL_GRADES.includes(sessional1?.gradeLabel || '') ||
+    SPECIAL_SESSIONAL_GRADES.includes(sessional2?.gradeLabel || '')
+  );
+}
+
+// Get total marks from both sessionals
+export function getSessionalTotalMarks(assessments: Assessment[]): { total: number; s1Marks: number | null; s2Marks: number | null; bothEntered: boolean } {
+  const sessional1 = assessments.find(a => a.name === 'Sessional 1');
+  const sessional2 = assessments.find(a => a.name === 'Sessional 2');
   
-  // Both must have "I" grade selected and marks >= 25
-  const s1HasI = sessional1.gradeLabel === 'I' && sessional1.marks !== null && sessional1.marks >= 25;
-  const s2HasI = sessional2.gradeLabel === 'I' && sessional2.marks !== null && sessional2.marks >= 25;
+  const s1Marks = sessional1?.marks ?? null;
+  const s2Marks = sessional2?.marks ?? null;
+  const bothEntered = s1Marks !== null && s2Marks !== null;
+  const total = (s1Marks ?? 0) + (s2Marks ?? 0);
   
-  return s1HasI && s2HasI;
+  return { total, s1Marks, s2Marks, bothEntered };
+}
+
+// Get grade point for special sessional grades based on total marks
+export function getSessionalGradePoint(gradeLabel: string | null, totalMarks: number): number {
+  if (!gradeLabel) return 0;
+  
+  // Ab/R always gets 0 regardless of total
+  if (gradeLabel === 'Ab/R') return 0;
+  
+  // I and P get 4 if total >= 25, otherwise 0
+  if (gradeLabel === 'I' || gradeLabel === 'P') {
+    return totalMarks >= 25 ? 4 : 0;
+  }
+  
+  return 0;
 }
 
 // Check if the course should get "F" grade due to special conditions
@@ -77,35 +105,29 @@ export function checkForFGrade(assessments: Assessment[]): { isF: boolean; reaso
   const sessional2 = assessments.find(a => a.name === 'Sessional 2');
   const le = assessments.find(a => a.name === 'Learning Engagement');
   
-  // Calculate total marks (from sessionals that have marks)
-  let totalMarks = 0;
-  if (sessional1?.marks !== null && sessional1?.marks !== undefined) {
-    totalMarks += sessional1.marks;
-  }
-  if (sessional2?.marks !== null && sessional2?.marks !== undefined) {
-    totalMarks += sessional2.marks;
-  }
+  // Check if marks input is required
+  const needsMarks = requiresMarksInput(assessments);
   
-  // If either sessional has "I" grade with marks, check total
-  const hasIGradeWithMarks = 
-    (sessional1?.gradeLabel === 'I' && sessional1?.marks !== null) ||
-    (sessional2?.gradeLabel === 'I' && sessional2?.marks !== null);
-  
-  if (hasIGradeWithMarks && totalMarks < 25) {
-    return { isF: true, reason: 'Total marks < 25' };
-  }
-  
-  // Check if LE is L/AB - if total >= 25 and LE is L/AB, then F
-  if (le?.gradeLabel === 'L/AB') {
-    if (totalMarks >= 25 || !hasIGradeWithMarks) {
+  if (needsMarks) {
+    const { total, bothEntered } = getSessionalTotalMarks(assessments);
+    
+    // Only check if both marks are entered
+    if (bothEntered) {
+      // If total marks < 25, it's F
+      if (total < 25) {
+        return { isF: true, reason: 'Total marks < 25' };
+      }
+      
+      // If total >= 25 and LE is L/AB, it's F
+      if (le?.gradeLabel === 'L/AB') {
+        return { isF: true, reason: 'Learning Engagement is L/AB' };
+      }
+    }
+  } else {
+    // No special grades, just check LE
+    if (le?.gradeLabel === 'L/AB') {
       return { isF: true, reason: 'Learning Engagement is L/AB' };
     }
-  }
-  
-  // Check if any assessment has Ab/R or L/AB (these are always 0 GP)
-  const hasAbR = assessments.some(a => a.gradeLabel === 'Ab/R');
-  if (hasAbR) {
-    return { isF: true, reason: 'Ab/R grade present' };
   }
   
   return { isF: false, reason: '' };

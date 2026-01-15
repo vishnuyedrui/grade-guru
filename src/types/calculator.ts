@@ -91,8 +91,11 @@ export function getSessionalGradePoint(gradeLabel: string | null, totalMarks: nu
   // Ab/R always gets 0 regardless of total
   if (gradeLabel === 'Ab/R') return 0;
   
-  // I and P get 4 if total >= 25, otherwise 0
-  if (gradeLabel === 'I' || gradeLabel === 'P') {
+  // P always gets 4 regardless of marks
+  if (gradeLabel === 'P') return 4;
+  
+  // I gets 4 if total >= 25, otherwise 0
+  if (gradeLabel === 'I') {
     return totalMarks >= 25 ? 4 : 0;
   }
   
@@ -105,16 +108,19 @@ export function checkForFGrade(assessments: Assessment[]): { isF: boolean; reaso
   const sessional2 = assessments.find(a => a.name === 'Sessional 2');
   const le = assessments.find(a => a.name === 'Learning Engagement');
   
-  // Check if marks input is required
-  const needsMarks = requiresMarksInput(assessments);
+  // Check if marks input is required (only for I or Ab/R, not P)
+  const hasIorAbR = 
+    sessional1?.gradeLabel === 'I' || sessional1?.gradeLabel === 'Ab/R' ||
+    sessional2?.gradeLabel === 'I' || sessional2?.gradeLabel === 'Ab/R';
   
-  if (needsMarks) {
+  if (hasIorAbR) {
     const { total, bothEntered } = getSessionalTotalMarks(assessments);
     
     // Only check if both marks are entered
     if (bothEntered) {
-      // If total marks < 25, it's F
-      if (total < 25) {
+      // If total marks < 25 and there's an I grade, it's F
+      const hasIGrade = sessional1?.gradeLabel === 'I' || sessional2?.gradeLabel === 'I';
+      if (total < 25 && hasIGrade) {
         return { isF: true, reason: 'Total marks < 25' };
       }
       
@@ -124,7 +130,7 @@ export function checkForFGrade(assessments: Assessment[]): { isF: boolean; reaso
       }
     }
   } else {
-    // No special grades, just check LE
+    // No I/Ab/R grades, just check LE
     if (le?.gradeLabel === 'L/AB') {
       return { isF: true, reason: 'Learning Engagement is L/AB' };
     }

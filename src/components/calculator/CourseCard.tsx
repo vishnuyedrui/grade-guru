@@ -536,17 +536,34 @@ export function CourseCard({
 
   // Helper to recalculate and update course based on assessments
   const recalculateCourse = (newAssessments: Assessment[]) => {
-    // Check if marks input is required
-    const needsMarks = requiresMarksInput(newAssessments);
+    // Check if we have I or Ab/R grades that need marks
+    const s1 = newAssessments.find(a => a.name === 'Sessional 1');
+    const s2 = newAssessments.find(a => a.name === 'Sessional 2');
     
-    if (needsMarks) {
-      const { total, bothEntered, s1Marks, s2Marks } = getSessionalTotalMarks(newAssessments);
+    const hasIorAbR = 
+      s1?.gradeLabel === 'I' || s1?.gradeLabel === 'Ab/R' ||
+      s2?.gradeLabel === 'I' || s2?.gradeLabel === 'Ab/R';
+    
+    // P grade always gets GP 4 immediately (no marks dependency)
+    const hasOnlyP = 
+      (s1?.gradeLabel === 'P' || s2?.gradeLabel === 'P') && !hasIorAbR;
+    
+    if (hasIorAbR) {
+      const { total, bothEntered } = getSessionalTotalMarks(newAssessments);
       
-      // If both marks aren't entered yet, wait for input
+      // If both marks aren't entered yet, wait for input but still update state
       if (!bothEntered) {
+        // Still update with P grades calculated if present
+        const partialAssessments = newAssessments.map(a => {
+          if ((a.name === 'Sessional 1' || a.name === 'Sessional 2') && a.gradeLabel === 'P') {
+            return { ...a, gradePoint: 4 };
+          }
+          return a;
+        });
+        
         onUpdate({
           ...course,
-          assessments: newAssessments,
+          assessments: partialAssessments,
           wgp: null,
           finalGradePoint: null,
           letterGrade: null,
@@ -557,9 +574,17 @@ export function CourseCard({
       // Check for F grade condition first
       const fGradeCheck = checkForFGrade(newAssessments);
       if (fGradeCheck.isF) {
+        const updatedAssessments = newAssessments.map(a => {
+          if ((a.name === 'Sessional 1' || a.name === 'Sessional 2') && SPECIAL_SESSIONAL_GRADES.includes(a.gradeLabel || '')) {
+            const gradePoint = getSessionalGradePoint(a.gradeLabel, total);
+            return { ...a, gradePoint };
+          }
+          return a;
+        });
+        
         onUpdate({
           ...course,
-          assessments: newAssessments,
+          assessments: updatedAssessments,
           wgp: 0,
           finalGradePoint: 0,
           letterGrade: 'F',
@@ -577,6 +602,57 @@ export function CourseCard({
       });
       
       // Normal WGP calculation with updated grade points
+      const rawWGP = calculateWGP(updatedAssessments);
+      const wgp = rawWGP !== null ? Math.min(10, Math.ceil(rawWGP)) : null;
+
+      let finalGradePoint = null;
+      let letterGrade = null;
+
+      if (wgp !== null) {
+        let effectiveGP = wgp;
+
+        if (course.hasLab && course.labMarks !== null) {
+          effectiveGP = calculateFinalGradePointWithLab(wgp, course.labMarks);
+        }
+
+        const grade = getGradeFromWGP(effectiveGP);
+        finalGradePoint = effectiveGP;
+        letterGrade = grade.letter;
+      }
+
+      onUpdate({
+        ...course,
+        assessments: updatedAssessments,
+        wgp,
+        finalGradePoint,
+        letterGrade,
+      });
+      return;
+    }
+    
+    // Handle P grade only (no I or Ab/R) - P always gets GP 4
+    if (hasOnlyP) {
+      const updatedAssessments = newAssessments.map(a => {
+        if ((a.name === 'Sessional 1' || a.name === 'Sessional 2') && a.gradeLabel === 'P') {
+          return { ...a, gradePoint: 4 };
+        }
+        return a;
+      });
+      
+      // Check for F grade (L/AB in LE)
+      const fGradeCheck = checkForFGrade(updatedAssessments);
+      if (fGradeCheck.isF) {
+        onUpdate({
+          ...course,
+          assessments: updatedAssessments,
+          wgp: 0,
+          finalGradePoint: 0,
+          letterGrade: 'F',
+        });
+        return;
+      }
+      
+      // Normal calculation
       const rawWGP = calculateWGP(updatedAssessments);
       const wgp = rawWGP !== null ? Math.min(10, Math.ceil(rawWGP)) : null;
 
@@ -686,8 +762,13 @@ export function CourseCard({
     recalculateCourse(newAssessments);
   };
   
-  // Check if marks input is required for this course
-  const showMarksInputs = requiresMarksInput(course.assessments);
+  // Check if marks input is required for this course (only for I or Ab/R, not P alone)
+  const s1Assessment = course.assessments.find(a => a.name === 'Sessional 1');
+  const s2Assessment = course.assessments.find(a => a.name === 'Sessional 2');
+  const hasIorAbR = 
+    s1Assessment?.gradeLabel === 'I' || s1Assessment?.gradeLabel === 'Ab/R' ||
+    s2Assessment?.gradeLabel === 'I' || s2Assessment?.gradeLabel === 'Ab/R';
+  const showMarksInputs = hasIorAbR;
   const { total: totalMarks, s1Marks, s2Marks, bothEntered } = getSessionalTotalMarks(course.assessments);
 
   const handleLabToggle = (checked: boolean) => {
@@ -953,10 +1034,10 @@ export function CourseCard({
                   <p className="text-xs mt-1">⚠️ Enter marks for both sessionals to calculate grades</p>
                 )}
                 {bothEntered && totalMarks >= 25 && (
-                  <p className="text-xs mt-1">✅ Total ≥ 25: I/P grades get GP 4, Ab/R gets GP 0</p>
+                  <p className="text-xs mt-1">✅ Total ≥ 25: I grade gets GP 4, Ab/R gets GP 0</p>
                 )}
                 {bothEntered && totalMarks < 25 && (
-                  <p className="text-xs mt-1">⚠️ Total &lt; 25: All special grades get GP 0 → Final Grade: F</p>
+                  <p className="text-xs mt-1">⚠️ Total &lt; 25: I grade gets GP 0 → Final Grade: F (if I selected)</p>
                 )}
               </div>
             )}

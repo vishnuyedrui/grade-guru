@@ -59,6 +59,101 @@ export type Database = {
           },
         ]
       }
+      branches: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      chapters: {
+        Row: {
+          chapter_number: number
+          course_id: string
+          created_at: string
+          id: string
+          title: string
+        }
+        Insert: {
+          chapter_number: number
+          course_id: string
+          created_at?: string
+          id?: string
+          title: string
+        }
+        Update: {
+          chapter_number?: number
+          course_id?: string
+          created_at?: string
+          id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapters_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          branch_id: string
+          code: string
+          created_at: string
+          id: string
+          name: string
+          semester_id: string
+        }
+        Insert: {
+          branch_id: string
+          code: string
+          created_at?: string
+          id?: string
+          name: string
+          semester_id: string
+        }
+        Update: {
+          branch_id?: string
+          code?: string
+          created_at?: string
+          id?: string
+          name?: string
+          semester_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courses_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_semester_id_fkey"
+            columns: ["semester_id"]
+            isOneToOne: false
+            referencedRelation: "semesters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       holidays: {
         Row: {
           created_at: string
@@ -88,28 +183,127 @@ export type Database = {
       }
       profiles: {
         Row: {
+          branch_id: string | null
           created_at: string
           email: string | null
           full_name: string | null
           id: string
+          semester_id: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          branch_id?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id?: string
+          semester_id?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          branch_id?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id?: string
+          semester_id?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_semester_id_fkey"
+            columns: ["semester_id"]
+            isOneToOne: false
+            referencedRelation: "semesters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resources: {
+        Row: {
+          chapter_id: string | null
+          course_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          file_path: string | null
+          id: string
+          resource_type: Database["public"]["Enums"]["resource_type"]
+          title: string
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          chapter_id?: string | null
+          course_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          file_path?: string | null
+          id?: string
+          resource_type: Database["public"]["Enums"]["resource_type"]
+          title: string
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          chapter_id?: string | null
+          course_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          file_path?: string | null
+          id?: string
+          resource_type?: Database["public"]["Enums"]["resource_type"]
+          title?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resources_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resources_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      semesters: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          number: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          number: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          number?: number
         }
         Relationships: []
       }
@@ -206,15 +400,50 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      resource_type:
+        | "youtube_video"
+        | "drive_link"
+        | "previous_paper"
+        | "syllabus"
+        | "notes"
+        | "document"
+        | "image"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -341,6 +570,17 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      resource_type: [
+        "youtube_video",
+        "drive_link",
+        "previous_paper",
+        "syllabus",
+        "notes",
+        "document",
+        "image",
+      ],
+    },
   },
 } as const

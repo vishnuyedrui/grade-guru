@@ -1,15 +1,13 @@
-import { useState, useCallback, lazy, Suspense } from "react";
+import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Course, createNewCourse, calculateSGPA } from "@/types/calculator";
 import { CourseCard } from "@/components/calculator/CourseCard";
 import { StepIndicator } from "@/components/calculator/StepIndicator";
 import { SGPASection } from "@/components/calculator/SGPASection";
+import { CGPASection } from "@/components/calculator/CGPASection";
 import { GradeChart } from "@/components/calculator/GradeChart";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, GraduationCap, Sparkles, LogIn, Shield } from "lucide-react";
-
-// Lazy load CGPASection since it's only shown when user clicks "Calculate CGPA"
-const CGPASection = lazy(() => import("@/components/calculator/CGPASection").then(m => ({ default: m.CGPASection })));
 const Index = () => {
   const [courses, setCourses] = useState<Course[]>([createNewCourse()]);
   const [showCGPA, setShowCGPA] = useState(false);
@@ -136,18 +134,16 @@ const Index = () => {
           />
         </section>
 
-        {/* Step 4: CGPA (Optional) - Lazy loaded */}
+        {/* Step 4: CGPA (Optional) */}
         {showCGPA && sgpaResult && (
-          <Suspense fallback={<div className="animate-pulse h-48 bg-muted rounded-lg" />}>
-            <section className="space-y-3 sm:space-y-4">
-              <CGPASection 
-                currentSGPA={sgpaResult.sgpa} 
-                currentCredits={sgpaResult.totalCredits}
-                courses={courses}
-                onCGPACalculated={handleCGPACalculated}
-              />
-            </section>
-          </Suspense>
+          <section className="space-y-3 sm:space-y-4">
+            <CGPASection 
+              currentSGPA={sgpaResult.sgpa} 
+              currentCredits={sgpaResult.totalCredits}
+              courses={courses}
+              onCGPACalculated={handleCGPACalculated}
+            />
+          </section>
         )}
       </main>
 

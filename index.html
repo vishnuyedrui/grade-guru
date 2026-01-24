@@ -11,19 +11,12 @@
     <!-- DNS Prefetch for external resources -->
     <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
     <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin />
-    <link rel="preconnect" href="https://static.cloudflareinsights.com" crossorigin />
 
     <!-- Favicon: A+ badge -->
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 
     <!-- Preload LCP image -->
-    <link rel="preload" href="/grade-conversion.webp" as="image" type="image/webp" fetchpriority="high" />
-
-    <!-- Critical inline CSS for faster FCP -->
-    <style>
-      body { margin: 0; font-family: system-ui, -apple-system, sans-serif; }
-      #root { min-height: 100vh; }
-    </style>
+    <link rel="preload" href="/grade-conversion.png" as="image" fetchpriority="high" />
 
     <!-- Open Graph -->
     <meta property="og:title" content="JuicyFish - SGPA/CGPA Calculator & Attendance Tracker" />
@@ -38,26 +31,26 @@
     <meta name="twitter:description" content="Free SGPA/CGPA calculator and attendance tracker for students." />
     <meta name="twitter:image" content="https://www.juicyfish.online/grade-conversion.png" />
 
-    <!-- Google AdSense - Deferred loading after page load for better LCP -->
+    <!-- Google AdSense - Deferred loading for better performance -->
     <script>
-      function loadAds() {
-        var script = document.createElement('script');
-        script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3849772039813147';
-        script.async = true;
-        script.crossOrigin = 'anonymous';
-        document.head.appendChild(script);
-      }
-      
-      // Load ads after page is fully loaded + 2 second delay
-      window.addEventListener('load', function() {
+      // Delay AdSense loading until page is interactive
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(function() {
+          var script = document.createElement('script');
+          script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3849772039813147';
+          script.async = true;
+          script.crossOrigin = 'anonymous';
+          document.head.appendChild(script);
+        });
+      } else {
         setTimeout(function() {
-          if ('requestIdleCallback' in window) {
-            requestIdleCallback(loadAds);
-          } else {
-            loadAds();
-          }
-        }, 2000);
-      });
+          var script = document.createElement('script');
+          script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3849772039813147';
+          script.async = true;
+          script.crossOrigin = 'anonymous';
+          document.head.appendChild(script);
+        }, 3000);
+      }
     </script>
   </head>
 

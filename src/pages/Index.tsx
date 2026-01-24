@@ -7,7 +7,7 @@ import { SGPASection } from "@/components/calculator/SGPASection";
 import { CGPASection } from "@/components/calculator/CGPASection";
 import { GradeChart } from "@/components/calculator/GradeChart";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Sparkles, LogIn, Shield } from "lucide-react";
+import { PlusCircle, Sparkles, LogIn, Shield, Download } from "lucide-react";
 import logo from "@/assets/logo.png";
 const Index = () => {
   const [courses, setCourses] = useState<Course[]>([createNewCourse()]);
@@ -84,6 +84,12 @@ const Index = () => {
                   <span className="hidden sm:inline">Admin</span>
                 </Button>
               </Link>
+              <a href="/downloads/juicyfish.apk" download="JuicyFish.apk" aria-label="Download App">
+                <Button variant="outline" size="sm" className="gap-2" aria-label="Download App">
+                  <Download className="w-4 h-4" aria-hidden="true" />
+                  <span className="hidden sm:inline">Download App</span>
+                </Button>
+              </a>
               <Link to="/auth" aria-label="Sign In">
                 <Button variant="outline" size="sm" className="gap-2" aria-label="Sign In">
                   <LogIn className="w-4 h-4" aria-hidden="true" />

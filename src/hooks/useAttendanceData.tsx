@@ -174,6 +174,175 @@ export const useAttendanceData = () => {
     setSubjects(subjects.map(s => s.id === id ? { ...s, name, is_lab: isLab } : s));
   };
 
+  const updateSubjectAttendance = async (subjectId: string, newTotal: number, newAttended: number) => {
+    if (!user) return;
+    
+    // Get current stats
+    const currentStats = calculateSubjectStats(subjectId);
+    const currentTotal = currentStats.total;
+    const currentAttended = currentStats.attended;
+    
+    // Calculate the difference
+    const totalDiff = newTotal - currentTotal;
+    const attendedDiff = newAttended - currentAttended;
+    
+    if (totalDiff === 0 && attendedDiff === 0) return;
+    
+    // Validate
+    if (newAttended > newTotal) {
+      toast.error('Attended classes cannot exceed total classes');
+      return;
+    }
+    
+    const today = new Date();
+    const recordsToAdd: { user_id: string; subject_id: string; time_slot_id: string; date: string; status: string }[] = [];
+    const recordsToDelete: string[] = [];
+    
+    // Handle total classes change
+    if (totalDiff > 0) {
+      // Need to add more records
+      const newPresent = Math.max(0, attendedDiff);
+      const newAbsent = totalDiff - newPresent;
+      
+      // Add present records
+      for (let i = 0; i < newPresent; i++) {
+        recordsToAdd.push({
+          user_id: user.id,
+          subject_id: subjectId,
+          time_slot_id: timeSlots[0]?.id || 'placeholder',
+          date: format(new Date(today.getTime() - (i + 1) * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+          status: 'present',
+        });
+      }
+      
+      // Add absent records
+      for (let i = 0; i < newAbsent; i++) {
+        recordsToAdd.push({
+          user_id: user.id,
+          subject_id: subjectId,
+          time_slot_id: timeSlots[0]?.id || 'placeholder',
+          date: format(new Date(today.getTime() - (newPresent + i + 1) * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+          status: 'absent',
+        });
+      }
+    } else if (totalDiff < 0) {
+      // Need to remove records - delete from the end
+      const subjectRecords = attendanceRecords.filter(r => r.subject_id === subjectId);
+      const toRemove = Math.abs(totalDiff);
+      
+      // First try to remove absent records, then present if needed
+      const absentRecords = subjectRecords.filter(r => r.status === 'absent');
+      const presentRecords = subjectRecords.filter(r => r.status === 'present');
+      
+      let removed = 0;
+      
+      // Remove absent records first
+      for (const record of absentRecords) {
+        if (removed >= toRemove) break;
+        recordsToDelete.push(record.id);
+        removed++;
+      }
+      
+      // If we still need to remove more, remove present records
+      if (removed < toRemove) {
+        for (const record of presentRecords) {
+          if (removed >= toRemove) break;
+          recordsToDelete.push(record.id);
+          removed++;
+        }
+      }
+    } else {
+      // Total is same but attended changed - need to flip statuses
+      const subjectRecords = attendanceRecords.filter(r => r.subject_id === subjectId);
+      
+      if (attendedDiff > 0) {
+        // Need to convert absent to present
+        const absentRecords = subjectRecords.filter(r => r.status === 'absent');
+        for (let i = 0; i < Math.min(attendedDiff, absentRecords.length); i++) {
+          const { error } = await supabase
+            .from('attendance_records')
+            .update({ status: 'present' })
+            .eq('id', absentRecords[i].id);
+          if (error) {
+            toast.error('Failed to update attendance');
+            return;
+          }
+        }
+        setAttendanceRecords(
+          attendanceRecords.map(r => {
+            if (r.subject_id === subjectId && r.status === 'absent') {
+              const idx = absentRecords.findIndex(ar => ar.id === r.id);
+              if (idx >= 0 && idx < attendedDiff) {
+                return { ...r, status: 'present' as const };
+              }
+            }
+            return r;
+          })
+        );
+        toast.success('Attendance updated');
+        return;
+      } else if (attendedDiff < 0) {
+        // Need to convert present to absent
+        const presentRecords = subjectRecords.filter(r => r.status === 'present');
+        const toFlip = Math.abs(attendedDiff);
+        for (let i = 0; i < Math.min(toFlip, presentRecords.length); i++) {
+          const { error } = await supabase
+            .from('attendance_records')
+            .update({ status: 'absent' })
+            .eq('id', presentRecords[i].id);
+          if (error) {
+            toast.error('Failed to update attendance');
+            return;
+          }
+        }
+        setAttendanceRecords(
+          attendanceRecords.map(r => {
+            if (r.subject_id === subjectId && r.status === 'present') {
+              const idx = presentRecords.findIndex(pr => pr.id === r.id);
+              if (idx >= 0 && idx < toFlip) {
+                return { ...r, status: 'absent' as const };
+              }
+            }
+            return r;
+          })
+        );
+        toast.success('Attendance updated');
+        return;
+      }
+    }
+    
+    // Execute deletions
+    if (recordsToDelete.length > 0) {
+      for (const id of recordsToDelete) {
+        const { error } = await supabase.from('attendance_records').delete().eq('id', id);
+        if (error) {
+          toast.error('Failed to update attendance');
+          return;
+        }
+      }
+      setAttendanceRecords(attendanceRecords.filter(r => !recordsToDelete.includes(r.id)));
+    }
+    
+    // Execute additions
+    if (recordsToAdd.length > 0 && timeSlots.length > 0) {
+      const { data, error } = await supabase
+        .from('attendance_records')
+        .insert(recordsToAdd)
+        .select();
+      
+      if (error) {
+        toast.error('Failed to update attendance');
+        return;
+      }
+      
+      if (data) {
+        setAttendanceRecords([...attendanceRecords.filter(r => !recordsToDelete.includes(r.id)), ...data as DbAttendanceRecord[]]);
+      }
+    }
+    
+    toast.success('Attendance updated');
+  };
+
   const deleteSubject = async (id: string) => {
     const { error } = await supabase.from('subjects').delete().eq('id', id);
     if (error) {
@@ -463,6 +632,7 @@ export const useAttendanceData = () => {
     fetchData,
     addSubject,
     updateSubject,
+    updateSubjectAttendance,
     deleteSubject,
     initializeDefaultTimeSlots,
     addTimeSlot,

@@ -11,6 +11,7 @@ interface SubjectManagerProps {
   subjects: DbSubject[];
   onAddSubject: (name: string, isLab: boolean, totalClasses: number, attendedClasses: number) => Promise<DbSubject | null>;
   onUpdateSubject: (id: string, name: string, isLab: boolean) => Promise<void>;
+  onUpdateSubjectAttendance: (subjectId: string, newTotal: number, newAttended: number) => Promise<void>;
   onDeleteSubject: (id: string) => Promise<void>;
   getSubjectStats: (subjectId: string) => { total: number; attended: number; percentage: number };
 }
@@ -19,6 +20,7 @@ export const SubjectManager = ({
   subjects,
   onAddSubject,
   onUpdateSubject,
+  onUpdateSubjectAttendance,
   onDeleteSubject,
   getSubjectStats,
 }: SubjectManagerProps) => {
@@ -29,7 +31,10 @@ export const SubjectManager = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editIsLab, setEditIsLab] = useState(false);
+  const [editTotal, setEditTotal] = useState('');
+  const [editAttended, setEditAttended] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const handleAdd = async () => {
     if (!newSubjectName.trim()) return;
@@ -51,14 +56,28 @@ export const SubjectManager = ({
   };
 
   const startEditing = (subject: DbSubject) => {
+    const stats = getSubjectStats(subject.id);
     setEditingId(subject.id);
     setEditName(subject.name);
     setEditIsLab(subject.is_lab);
+    setEditTotal(stats.total.toString());
+    setEditAttended(stats.attended.toString());
   };
 
   const handleUpdate = async () => {
     if (!editingId || !editName.trim()) return;
+    
+    const newTotal = parseInt(editTotal) || 0;
+    const newAttended = parseInt(editAttended) || 0;
+    
+    if (newAttended > newTotal) {
+      return;
+    }
+    
+    setIsUpdating(true);
     await onUpdateSubject(editingId, editName.trim(), editIsLab);
+    await onUpdateSubjectAttendance(editingId, newTotal, newAttended);
+    setIsUpdating(false);
     setEditingId(null);
   };
 
@@ -157,33 +176,78 @@ export const SubjectManager = ({
               return (
                 <div
                   key={subject.id}
-                  className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 bg-muted/50 rounded-lg"
+                  className="flex flex-col gap-2 p-3 bg-muted/50 rounded-lg"
                 >
                   {editingId === subject.id ? (
-                    <div className="flex flex-col sm:flex-row gap-2 flex-1">
-                      <Input
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        className="flex-1"
-                        autoFocus
-                      />
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id={`edit-lab-${subject.id}`}
-                          checked={editIsLab}
-                          onCheckedChange={(checked) => setEditIsLab(checked === true)}
+                    <div className="space-y-3">
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Input
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          className="flex-1"
+                          placeholder="Subject name"
+                          autoFocus
                         />
-                        <Label htmlFor={`edit-lab-${subject.id}`} className="text-sm">Lab</Label>
-                        <Button size="icon" variant="ghost" onClick={handleUpdate}>
-                          <Check className="w-4 h-4 text-green-600" />
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id={`edit-lab-${subject.id}`}
+                            checked={editIsLab}
+                            onCheckedChange={(checked) => setEditIsLab(checked === true)}
+                          />
+                          <Label htmlFor={`edit-lab-${subject.id}`} className="text-sm">Lab</Label>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <div className="flex-1">
+                          <Label className="text-xs text-muted-foreground mb-1 block">Total Classes</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={editTotal}
+                            onChange={(e) => setEditTotal(e.target.value)}
+                            placeholder="Total classes"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <Label className="text-xs text-muted-foreground mb-1 block">Classes Attended</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            max={editTotal || undefined}
+                            value={editAttended}
+                            onChange={(e) => setEditAttended(e.target.value)}
+                            placeholder="Attended"
+                          />
+                        </div>
+                      </div>
+                      
+                      {editAttended && editTotal && parseInt(editAttended) > parseInt(editTotal) && (
+                        <p className="text-xs text-red-500">Attended classes cannot exceed total classes</p>
+                      )}
+                      
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          onClick={handleUpdate}
+                          disabled={isUpdating || (parseInt(editAttended) > parseInt(editTotal))}
+                        >
+                          <Check className="w-4 h-4 mr-1" />
+                          Save
                         </Button>
-                        <Button size="icon" variant="ghost" onClick={() => setEditingId(null)}>
-                          <X className="w-4 h-4 text-red-600" />
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => setEditingId(null)}
+                          disabled={isUpdating}
+                        >
+                          <X className="w-4 h-4 mr-1" />
+                          Cancel
                         </Button>
                       </div>
                     </div>
                   ) : (
-                    <>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                       <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2">
                         <span className="font-medium">{subject.name}</span>
                         {subject.is_lab && (
@@ -206,7 +270,7 @@ export const SubjectManager = ({
                           <Trash2 className="w-4 h-4 text-red-600" />
                         </Button>
                       </div>
-                    </>
+                    </div>
                   )}
                 </div>
               );

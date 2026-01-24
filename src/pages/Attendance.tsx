@@ -24,6 +24,7 @@ const Attendance = () => {
     loading,
     addSubject,
     updateSubject,
+    updateSubjectAttendance,
     deleteSubject,
     initializeDefaultTimeSlots,
     addTimeSlot,
@@ -132,6 +133,7 @@ const Attendance = () => {
               subjects={subjects}
               onAddSubject={addSubject}
               onUpdateSubject={updateSubject}
+              onUpdateSubjectAttendance={updateSubjectAttendance}
               onDeleteSubject={deleteSubject}
               getSubjectStats={calculateSubjectStats}
             />

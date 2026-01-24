@@ -38,6 +38,8 @@ const ResourceViewer = ({ isOpen, onClose, resource }: ResourceViewerProps) => {
 
   // Check file type
   const isPDF = resourceUrl.toLowerCase().endsWith('.pdf') || resource.resource_type === 'document';
+  const isOfficeDoc = /\.(pptx?|docx?|xlsx?)$/i.test(resourceUrl);
+  const isViewableInGoogleDocs = isPDF || isOfficeDoc;
   const isImage = resource.resource_type === 'image' || 
     /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(resourceUrl);
   
@@ -71,7 +73,7 @@ const ResourceViewer = ({ isOpen, onClose, resource }: ResourceViewerProps) => {
             {resource.title}
           </DialogTitle>
           <div className="flex items-center gap-2">
-            {(isImage || isPDF) && (
+            {(isImage || isViewableInGoogleDocs) && (
               <>
                 <Button variant="ghost" size="icon" onClick={handleZoomOut}>
                   <ZoomOut className="w-4 h-4" />
@@ -112,7 +114,7 @@ const ResourceViewer = ({ isOpen, onClose, resource }: ResourceViewerProps) => {
               style={{ border: 'none' }}
               allow="autoplay"
             />
-          ) : isPDF ? (
+          ) : isViewableInGoogleDocs ? (
             <iframe
               src={`https://docs.google.com/viewer?url=${encodeURIComponent(resourceUrl)}&embedded=true`}
               className="w-full h-full"

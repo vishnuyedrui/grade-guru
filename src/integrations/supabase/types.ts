@@ -486,7 +486,60 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      resources_public: {
+        Row: {
+          chapter_id: string | null
+          course_id: string | null
+          created_at: string | null
+          description: string | null
+          file_path: string | null
+          id: string | null
+          resource_type: Database["public"]["Enums"]["resource_type"] | null
+          title: string | null
+          updated_at: string | null
+          url: string | null
+        }
+        Insert: {
+          chapter_id?: string | null
+          course_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_path?: string | null
+          id?: string | null
+          resource_type?: Database["public"]["Enums"]["resource_type"] | null
+          title?: string | null
+          updated_at?: string | null
+          url?: string | null
+        }
+        Update: {
+          chapter_id?: string | null
+          course_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_path?: string | null
+          id?: string | null
+          resource_type?: Database["public"]["Enums"]["resource_type"] | null
+          title?: string | null
+          updated_at?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resources_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resources_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       has_role: {

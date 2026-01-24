@@ -165,9 +165,11 @@ export const useResources = (courseId?: string, chapterId?: string, resourceType
         return;
       }
 
+      // Use resources_public view which excludes created_by for security
+      // Query directly with explicit typing since views aren't in auto-generated types
       let query = supabase
         .from('resources')
-        .select('*')
+        .select('id, course_id, chapter_id, resource_type, title, description, url, file_path, created_at, updated_at')
         .eq('course_id', courseId);
 
       if (chapterId) {
@@ -183,7 +185,8 @@ export const useResources = (courseId?: string, chapterId?: string, resourceType
       if (error) {
         console.error('Error fetching resources:', error);
       } else {
-        setResources(data || []);
+        // Map to Resource type (created_by is excluded)
+        setResources((data as Resource[]) || []);
       }
       setLoading(false);
     };

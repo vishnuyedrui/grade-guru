@@ -2,12 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Pop Art Design System - Bold, Vibrant, Playful
+/* Art Deco / Bento Design System - Refined, Structured, Academic
 All colors MUST be HSL.
 */
 
 @layer base {
   :root {
+    /* Bento/Art Deco Palette */
+    --bento-bg: 220 20% 94%;
+    --bento-card: 0 0% 100%;
+    --bento-accent: 217 91% 60%;
+    --bento-navy: 220 60% 15%;
+    --bento-gold: 45 85% 55%;
+    --bento-text: 220 20% 25%;
+    --bento-muted: 220 15% 55%;
     --background: 45 100% 96%;
     --foreground: 280 60% 15%;
 
@@ -166,6 +174,23 @@ All colors MUST be HSL.
 
   .pop-gradient-green {
     background: linear-gradient(135deg, hsl(145 80% 45%), hsl(165 80% 45%));
+  }
+
+  /* Bento Card Utilities */
+  .bento-card {
+    @apply bg-white rounded-3xl shadow-sm border border-border/50 transition-all duration-300;
+  }
+
+  .bento-card-hover {
+    @apply hover:shadow-lg hover:scale-[1.02] hover:border-primary/20;
+  }
+
+  .bento-gradient {
+    background: linear-gradient(135deg, hsl(217 91% 60% / 0.1), hsl(220 60% 15% / 0.05));
+  }
+
+  .bento-accent-text {
+    @apply text-primary font-semibold;
   }
 }
 

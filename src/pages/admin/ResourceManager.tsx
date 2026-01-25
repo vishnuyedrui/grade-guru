@@ -87,19 +87,19 @@ const ResourceManager = () => {
     }
   };
 
-  const uploadFile = async (file: File): Promise<string> => {
+  const uploadFile = async (file: File): Promise<{ publicUrl: string; storagePath: string }> => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-    const filePath = `${selectedCourse}/${fileName}`;
+    const storagePath = `${selectedCourse}/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
       .from('resources')
-      .upload(filePath, file);
+      .upload(storagePath, file);
 
     if (uploadError) throw uploadError;
 
-    const { data } = supabase.storage.from('resources').getPublicUrl(filePath);
-    return data.publicUrl;
+    const { data } = supabase.storage.from('resources').getPublicUrl(storagePath);
+    return { publicUrl: data.publicUrl, storagePath };
   };
 
   const handleAddResource = async () => {
@@ -115,9 +115,12 @@ const ResourceManager = () => {
     setUploading(true);
     try {
       let fileUrl = newResource.url;
+      let storagePath: string | null = null;
 
       if (uploadedFile) {
-        fileUrl = await uploadFile(uploadedFile);
+        const uploadResult = await uploadFile(uploadedFile);
+        fileUrl = uploadResult.publicUrl;
+        storagePath = uploadResult.storagePath;
       }
 
       const { data, error } = await supabase
@@ -129,7 +132,7 @@ const ResourceManager = () => {
           title: newResource.title,
           description: newResource.description || null,
           url: fileUrl || null,
-          file_path: uploadedFile ? fileUrl : null,
+          file_path: storagePath,
         })
         .select()
         .single();
@@ -154,9 +157,24 @@ const ResourceManager = () => {
   const handleDeleteResource = async (resourceId: string, filePath?: string | null) => {
     try {
       if (filePath) {
-        const path = filePath.split('/resources/')[1];
-        if (path) {
-          await supabase.storage.from('resources').remove([path]);
+        let storagePath = filePath;
+        
+        // Handle legacy full URLs - extract path after bucket name
+        if (filePath.includes('supabase.co') || filePath.includes('/storage/')) {
+          // Match path after /resources/ in the URL
+          const match = filePath.match(/\/(?:object\/public\/)?resources\/(.+)$/);
+          if (match) {
+            storagePath = match[1];
+          }
+        }
+        
+        console.log('Deleting from storage:', storagePath);
+        const { error: storageError } = await supabase.storage
+          .from('resources')
+          .remove([storagePath]);
+        
+        if (storageError) {
+          console.error('Storage deletion error:', storageError);
         }
       }
 
@@ -164,8 +182,9 @@ const ResourceManager = () => {
       if (error) throw error;
 
       setResources(resources.filter((r) => r.id !== resourceId));
-      toast({ title: 'Success', description: 'Resource deleted' });
+      toast({ title: 'Success', description: 'Resource deleted successfully' });
     } catch (error: any) {
+      console.error('Delete resource error:', error);
       toast({
         title: 'Error',
         description: error.message,

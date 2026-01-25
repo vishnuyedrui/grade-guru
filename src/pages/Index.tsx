@@ -65,10 +65,10 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background pb-12 relative overflow-hidden">
-      {/* Abstract background decorations */}
-      <div className="absolute top-0 left-0 w-72 h-72 bg-pop-pink/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-      <div className="absolute top-1/4 right-0 w-96 h-96 bg-pop-cyan/10 rounded-full blur-3xl translate-x-1/2" />
-      <div className="absolute bottom-1/4 left-0 w-80 h-80 bg-pop-yellow/10 rounded-full blur-3xl -translate-x-1/3" />
+      {/* Abstract background decorations - optimized with blur-2xl for better performance */}
+      <div className="absolute top-0 left-0 w-72 h-72 bg-pop-pink/10 rounded-full blur-2xl -translate-x-1/2 -translate-y-1/2 will-change-transform" />
+      <div className="absolute top-1/4 right-0 w-96 h-96 bg-pop-cyan/10 rounded-full blur-2xl translate-x-1/2 will-change-transform" />
+      <div className="absolute bottom-1/4 left-0 w-80 h-80 bg-pop-yellow/10 rounded-full blur-2xl -translate-x-1/3 will-change-transform" />
       
       {/* Header - Pop Art Style */}
       <header className="relative z-10 pop-gradient-pink border-b-4 border-foreground/20">

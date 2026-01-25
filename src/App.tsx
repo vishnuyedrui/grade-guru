@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useAdmin } from "@/hooks/useAdmin";
 import { AdSenseProvider } from "@/contexts/AdSenseContext";
 import { AdSenseLoader } from "@/components/ads/AdSenseLoader";
+import AuthLoadingSkeleton from "@/components/AuthLoadingSkeleton";
 
 // Eager load the home page for fast initial render
 import Index from "./pages/Index";
@@ -39,11 +40,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
   
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <AuthLoadingSkeleton />;
   }
   
   if (!user) {
@@ -58,11 +55,7 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAdmin, loading: adminLoading } = useAdmin();
   
   if (loading || adminLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <AuthLoadingSkeleton />;
   }
   
   if (!user) {

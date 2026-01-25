@@ -31,15 +31,19 @@ const AdminLogin = () => {
         throw new Error('Login failed');
       }
 
-      // Check if user is admin using the secure has_role function
-      const { data: isAdmin, error: roleError } = await supabase.rpc('has_role', {
-        _user_id: authData.user.id,
-        _role: 'admin'
-      });
+      // Check if user is admin or super_admin using the secure has_role function
+      const [adminResult, superAdminResult] = await Promise.all([
+        supabase.rpc('has_role', { _user_id: authData.user.id, _role: 'admin' }),
+        supabase.rpc('has_role', { _user_id: authData.user.id, _role: 'super_admin' })
+      ]);
 
-      if (roleError) throw roleError;
+      const isAdmin = adminResult.data;
+      const isSuperAdmin = superAdminResult.data;
 
-      if (!isAdmin) {
+      if (adminResult.error) throw adminResult.error;
+      if (superAdminResult.error) throw superAdminResult.error;
+
+      if (!isAdmin && !isSuperAdmin) {
         await supabase.auth.signOut();
         toast({
           title: 'Access Denied',
@@ -51,7 +55,7 @@ const AdminLogin = () => {
       }
 
       toast({
-        title: 'Welcome Admin!',
+        title: isSuperAdmin ? 'Welcome Super Admin!' : 'Welcome Admin!',
         description: 'Redirecting to dashboard...',
       });
 

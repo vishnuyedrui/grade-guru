@@ -83,7 +83,7 @@ export function GradeChart() {
               decoding="async" 
               alt="Grade points and symbols in relative grading" 
               className="max-w-full w-full sm:w-[600px]" 
-              src="/lovable-uploads/7e4440f2-3824-402f-93a8-6f94292813e4.jpg" 
+              src="/grade-conversion.webp" 
             />
           </div>
           <p className="text-[10px] sm:text-xs text-muted-foreground mt-3 text-center font-medium">

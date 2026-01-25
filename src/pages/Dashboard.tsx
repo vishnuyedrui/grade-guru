@@ -234,8 +234,13 @@ const Dashboard = () => {
               </div>
             ) : (
               <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {courses.map((course) => (
-                  <Link key={course.id} to={`/courses/${course.id}`}>
+                {courses.map((course, index) => (
+                  <Link 
+                    key={course.id} 
+                    to={`/courses/${course.id}`}
+                    className="animate-fade-in"
+                    style={{ animationDelay: `${index * 75}ms`, animationFillMode: 'both' }}
+                  >
                     <Card className="hover:shadow-md transition-shadow cursor-pointer">
                       <CardContent className="pt-6">
                         <h3 className="font-semibold">{course.name}</h3>

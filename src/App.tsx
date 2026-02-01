@@ -27,6 +27,7 @@ const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const CourseManager = lazy(() => import("./pages/admin/CourseManager"));
 const ResourceManager = lazy(() => import("./pages/admin/ResourceManager"));
 const AnnouncementManager = lazy(() => import("./pages/admin/AnnouncementManager"));
+const BookLanding = lazy(() => import("./pages/BookLanding"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Loading component for Suspense fallback
@@ -85,9 +86,11 @@ const App = () => (
               <Routes>
                 {/* Public routes */}
                 <Route path="/" element={<Index />} />
+                <Route path="/book" element={<BookLanding />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/email-confirmed" element={<EmailConfirmed />} />
+                <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin/login" element={<AdminLogin />} />
                 
                 {/* Protected student routes */}
